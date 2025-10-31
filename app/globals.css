@@ -1,12 +1,23 @@
 @import "tailwindcss";
 
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
 @theme {
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
-  --color-primary-900: #1e3a8a;
+  --color-youtube-red: #ff0000;
+  --color-youtube-dark-red: #cc0000;
+  --color-youtube-bg: #0f0f0f;
+  --color-youtube-surface: #181818;
+  --color-youtube-hover: #272727;
+  --color-youtube-border: #303030;
+  --color-youtube-text: #ffffff;
+  --color-youtube-text-secondary: #aaaaaa;
+  --color-youtube-sidebar: #212121;
+}
+
+body {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--color-youtube-bg);
+  color: var(--color-youtube-text);
 }
 
 @layer utilities {
@@ -17,36 +28,35 @@
     -webkit-line-clamp: 3;
   }
   
-  .bg-dark-pattern {
-    background-color: #0a0a0a;
-    background-image: 
-      radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.02) 2px, transparent 2px),
-      radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
-    background-size: 60px 60px, 40px 40px;
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
   
-  .bg-floating-elements::before {
-    content: '';
-    position: absolute;
-    top: 10%;
-    left: 10%;
-    width: 100px;
-    height: 100px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 50%;
-    animation: float 6s ease-in-out infinite;
+  .youtube-button {
+    @apply bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-sm transition-colors duration-200;
   }
   
-  .bg-floating-elements::after {
-    content: '';
-    position: absolute;
-    top: 60%;
-    right: 15%;
-    width: 80px;
-    height: 80px;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-    animation: float 8s ease-in-out infinite reverse;
+  .youtube-button-outline {
+    @apply border border-gray-600 text-white hover:bg-gray-800 font-medium px-4 py-2 rounded-sm transition-colors duration-200;
+  }
+  
+  .youtube-card {
+    @apply bg-zinc-900 hover:bg-zinc-800 transition-colors duration-200 rounded-lg overflow-hidden;
+  }
+  
+  .youtube-text-primary {
+    @apply text-white;
+  }
+  
+  .youtube-text-secondary {
+    @apply text-gray-400;
+  }
+  
+  .youtube-sidebar-item {
+    @apply flex items-center p-3 hover:bg-zinc-800 rounded-lg transition-colors duration-200 cursor-pointer;
   }
 }
 

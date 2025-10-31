@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Youtube, DollarSign, Users, TrendingUp, Plus } from 'lucide-react';
+import { Youtube, DollarSign, Users, TrendingUp, Plus, BarChart3, Video } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CreatorDashboard() {
@@ -49,134 +48,142 @@ export default function CreatorDashboard() {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Creator Dashboard</h1>
-          <p className="text-gray-600">Manage your channels and offerings</p>
+    <div className="min-h-screen bg-zinc-950 px-4 py-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Creator Studio</h1>
+            <p className="text-gray-400">Manage your channels and revenue opportunities</p>
+          </div>
+          <Link href="/creator/onboard">
+            <Button className="youtube-button">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Channel
+            </Button>
+          </Link>
         </div>
-        <Link href="/creator/onboard">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Channel
-          </Button>
-        </Link>
-      </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Raised</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${calculateTotalRaised().toLocaleString()}</div>
-          </CardContent>
-        </Card>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="youtube-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-gray-400">Total Raised</h3>
+              <DollarSign className="h-5 w-5 text-green-400" />
+            </div>
+            <div className="text-2xl font-bold text-white">${calculateTotalRaised().toLocaleString()}</div>
+          </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Investors</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{calculateTotalInvestors()}</div>
-          </CardContent>
-        </Card>
+          <div className="youtube-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-gray-400">Total Investors</h3>
+              <Users className="h-5 w-5 text-blue-400" />
+            </div>
+            <div className="text-2xl font-bold text-white">{calculateTotalInvestors()}</div>
+          </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Active Offerings</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <div className="youtube-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-gray-400">Active Offerings</h3>
+              <TrendingUp className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="text-2xl font-bold text-white">
               {offerings.filter((o) => o.status === 'ACTIVE').length}
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Channels</CardTitle>
-            <Youtube className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{channels.length}</div>
-          </CardContent>
-        </Card>
-      </div>
+          <div className="youtube-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-gray-400">Channels</h3>
+              <Youtube className="h-5 w-5 text-red-600" />
+            </div>
+            <div className="text-2xl font-bold text-white">{channels.length}</div>
+          </div>
+        </div>
 
-      {/* Channels */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Channels</CardTitle>
-          <CardDescription>Verified YouTube channels</CardDescription>
-        </CardHeader>
-        <CardContent>
+        {/* Channels Section */}
+        <div className="youtube-card p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-semibold text-white">Your Channels</h2>
+              <p className="text-gray-400">Verified YouTube channels</p>
+            </div>
+          </div>
+
           {channels.length === 0 ? (
             <div className="text-center py-12">
-              <Youtube className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 mb-4">No channels connected yet</p>
+              <Youtube className="h-16 w-16 mx-auto text-gray-600 mb-4" />
+              <p className="text-gray-400 mb-6">No channels connected yet</p>
               <Link href="/creator/onboard">
-                <Button>Connect YouTube Channel</Button>
+                <Button className="youtube-button">Connect YouTube Channel</Button>
               </Link>
             </div>
           ) : (
             <div className="space-y-4">
               {channels.map((channel) => (
-                <div key={channel.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div key={channel.id} className="flex items-center justify-between p-4 bg-zinc-800 rounded-lg border border-zinc-700">
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center">
-                      <Youtube className="h-8 w-8 text-red-600" />
+                    <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
+                      <Youtube className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{channel.channelName}</h3>
-                        <Badge variant={channel.status === 'VERIFIED' ? 'default' : 'secondary'}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-white">{channel.channelName}</h3>
+                        <Badge 
+                          className={channel.status === 'VERIFIED' ? 'bg-green-600/20 text-green-400 border-green-600/30' : 'bg-yellow-600/20 text-yellow-400 border-yellow-600/30'}
+                        >
                           {channel.status}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-400">
                         {channel.analytics?.subscriberCount?.toLocaleString()} subscribers
                       </p>
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <Link href={`/creator/channel/${channel.id}`}>
-                      <Button variant="outline" size="sm">
-                        View Analytics
+                      <Button className="youtube-button-outline text-sm">
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        Analytics
                       </Button>
                     </Link>
                     <Link href={`/creator/offering/new?channelId=${channel.id}`}>
-                      <Button size="sm">Create Offering</Button>
+                      <Button className="youtube-button text-sm">Create Offering</Button>
                     </Link>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Offerings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Offerings</CardTitle>
-          <CardDescription>Revenue share opportunities</CardDescription>
-        </CardHeader>
-        <CardContent>
+        {/* Offerings Section */}
+        <div className="youtube-card p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-semibold text-white">Your Offerings</h2>
+              <p className="text-gray-400">Revenue share opportunities</p>
+            </div>
+          </div>
+
           {offerings.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-600 mb-4">No offerings created yet</p>
+              <Video className="h-16 w-16 mx-auto text-gray-600 mb-4" />
+              <p className="text-gray-400 mb-6">No offerings created yet</p>
               {channels.length > 0 && (
                 <Link href={`/creator/offering/new?channelId=${channels[0].id}`}>
-                  <Button>Create First Offering</Button>
+                  <Button className="youtube-button">Create First Offering</Button>
                 </Link>
               )}
             </div>
@@ -188,58 +195,68 @@ export default function CreatorDashboard() {
                 const totalRaised = soldShares * offering.pricePerShare;
 
                 return (
-                  <div key={offering.id} className="p-4 border rounded-lg">
-                    <div className="flex items-start justify-between mb-3">
+                  <div key={offering.id} className="p-4 bg-zinc-800 rounded-lg border border-zinc-700">
+                    <div className="flex items-start justify-between mb-4">
                       <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{offering.title}</h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-white">{offering.title}</h3>
                           <Badge
-                            variant={
+                            className={
                               offering.status === 'ACTIVE'
-                                ? 'default'
+                                ? 'bg-green-600/20 text-green-400 border-green-600/30'
                                 : offering.status === 'PENDING_APPROVAL'
-                                ? 'secondary'
-                                : 'outline'
+                                ? 'bg-yellow-600/20 text-yellow-400 border-yellow-600/30'
+                                : 'bg-gray-600/20 text-gray-400 border-gray-600/30'
                             }
                           >
                             {offering.status}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600">{offering.channel.channelName}</p>
+                        <p className="text-sm text-gray-400">{offering.channel.channelName}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-gray-600">Total Raised</p>
-                        <p className="text-xl font-bold text-green-600">
+                        <p className="text-sm text-gray-400">Total Raised</p>
+                        <p className="text-xl font-bold text-green-400">
                           ${totalRaised.toLocaleString()}
                         </p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-4 mb-3">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                       <div>
-                        <p className="text-sm text-gray-600">Revenue Share</p>
-                        <p className="font-semibold">{offering.sharePercentage}%</p>
+                        <p className="text-sm text-gray-400">Revenue Share</p>
+                        <p className="font-semibold text-white">{offering.sharePercentage}%</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Funding Progress</p>
-                        <p className="font-semibold">{fundingProgress}%</p>
+                        <p className="text-sm text-gray-400">Funding Progress</p>
+                        <p className="font-semibold text-white">{fundingProgress}%</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Investors</p>
-                        <p className="font-semibold">{offering.investments.length}</p>
+                        <p className="text-sm text-gray-400">Investors</p>
+                        <p className="font-semibold text-white">{offering.investments.length}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Duration</p>
-                        <p className="font-semibold">{offering.duration} months</p>
+                        <p className="text-sm text-gray-400">Duration</p>
+                        <p className="font-semibold text-white">{offering.duration} months</p>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="mb-4">
+                      <div className="w-full bg-zinc-700 rounded-full h-2">
+                        <div 
+                          className="bg-red-600 h-2 rounded-full transition-all duration-300" 
+                          style={{ width: `${fundingProgress}%` }}
+                        ></div>
                       </div>
                     </div>
 
                     {offering.investments.length > 0 && (
-                      <div className="mt-3 pt-3 border-t">
-                        <p className="text-sm font-medium mb-2">Recent Investors</p>
+                      <div className="pt-4 border-t border-zinc-700">
+                        <p className="text-sm font-medium mb-2 text-white">Recent Investors</p>
                         <div className="flex gap-2 flex-wrap">
                           {offering.investments.slice(0, 5).map((inv: any) => (
-                            <Badge key={inv.id} variant="outline">
+                            <Badge key={inv.id} className="bg-zinc-700 text-gray-300 border-zinc-600">
                               {inv.investor.name} - {inv.shares} shares
                             </Badge>
                           ))}
@@ -251,8 +268,8 @@ export default function CreatorDashboard() {
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -14,9 +14,11 @@ model User {
   id            String    @id @default(cuid())
   email         String    @unique
   name          String?
+  image         String?   // Add this field for OAuth profile images
   role          UserRole  @default(INVESTOR)
   kycStatus     KYCStatus @default(PENDING)
   kycData       Json?
+  emailVerified DateTime? // Add this field for NextAuth compatibility
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
@@ -58,6 +60,15 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
 }
 
 model Channel {

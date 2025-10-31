@@ -16,30 +16,50 @@ declare module "next-auth" {
       kycStatus?: string | null;
     };
   }
+  
+  interface User {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+    role?: string | null;
+    kycStatus?: string | null;
+  }
 }
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope: "openid email profile https://www.googleapis.com/auth/youtube.readonly"
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code",
+          scope: "openid email profile"
         }
       }
     }),
   ],
   callbacks: {
     async session({ session, user }: { session: Session; user: User | AdapterUser }) {
-      if (session?.user) {
+      if (session?.user && user) {
         session.user.id = user.id;
+        
         // Fetch the latest user data from database
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: user.id },
-            select: { role: true, kycStatus: true, name: true, email: true }
+            select: { 
+              id: true,
+              role: true, 
+              kycStatus: true, 
+              name: true, 
+              email: true, 
+              image: true 
+            }
           });
           
           if (dbUser) {
@@ -47,6 +67,7 @@ export const authOptions = {
             session.user.kycStatus = dbUser.kycStatus;
             session.user.name = dbUser.name;
             session.user.email = dbUser.email;
+            session.user.image = dbUser.image;
           }
         } catch (error) {
           console.error("Error fetching user data in session callback:", error);
@@ -54,46 +75,69 @@ export const authOptions = {
       }
       return session;
     },
-    async signIn({ user, account, profile }) {
+    
+    async signIn({ user, account, profile }: { user: User | AdapterUser; account: any; profile?: any }) {
+      if (!user.email) {
+        console.error("No email provided in sign in");
+        return false;
+      }
+
       try {
-        // The PrismaAdapter will handle user creation automatically
-        // This callback is just for additional processing
-        if (account?.provider === "google" && user.id) {
-          // Update or create account with OAuth tokens
-          await prisma.account.upsert({
-            where: {
-              provider_providerAccountId: {
-                provider: account.provider,
-                providerAccountId: account.providerAccountId,
-              },
-            },
-            update: {
-              access_token: account.access_token,
-              refresh_token: account.refresh_token,
-              expires_at: account.expires_at,
-              token_type: account.token_type,
-              scope: account.scope,
-              id_token: account.id_token,
-            },
-            create: {
-              userId: user.id,
-              type: account.type,
-              provider: account.provider,
-              providerAccountId: account.providerAccountId,
-              access_token: account.access_token,
-              refresh_token: account.refresh_token,
-              expires_at: account.expires_at,
-              token_type: account.token_type,
-              scope: account.scope,
-              id_token: account.id_token,
-            },
+        if (account?.provider === "google") {
+          console.log("Google sign in for:", user.email);
+          
+          // Check if user already exists
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email }
           });
+
+          if (!existingUser) {
+            console.log("Creating new user:", user.email);
+            // Let PrismaAdapter handle user creation, then update with defaults
+            return true;
+          } else {
+            console.log("Updating existing user:", user.email);
+            // Update existing user's profile information
+            await prisma.user.update({
+              where: { email: user.email },
+              data: {
+                name: user.name || existingUser.name,
+                image: user.image || existingUser.image,
+                emailVerified: new Date(),
+              },
+            });
+          }
         }
         return true;
       } catch (error) {
         console.error("Error in signIn callback:", error);
-        return false;
+        return `/auth/error?error=SignInCallbackError`;
       }
+    },
+  },
+  events: {
+    async createUser({ user }) {
+      console.log("CreateUser event fired for:", user.email);
+      // This event fires when PrismaAdapter creates a new user
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            role: 'INVESTOR',
+            kycStatus: 'PENDING',
+            emailVerified: new Date(),
+          },
+        });
+        console.log("User defaults set successfully for:", user.email);
+      } catch (error) {
+        console.error("Error setting default user values in createUser event:", error);
+      }
+    },
+    async signIn({ user, account, profile }) {
+      console.log("SignIn event:", { user: user.email, provider: account?.provider });
+    },
+    async session({ session, token }) {
+      console.log("Session event for:", session?.user?.email);
     },
   },
   pages: {
@@ -103,9 +147,11 @@ export const authOptions = {
   session: {
     strategy: "database" as const,
     maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours
   },
   debug: process.env.NODE_ENV === 'development',
   secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true, // Add this for deployment
 };
 
 const handler = NextAuth(authOptions);

@@ -43,124 +43,151 @@ export default function CreatorOnboardPage() {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold">Creator Onboarding</h1>
-        <p className="text-xl text-gray-600">
-          Turn your YouTube success into investment opportunities
-        </p>
-      </div>
+    <div className="min-h-screen bg-zinc-950 py-16 px-4">
+      <div className="max-w-7xl mx-auto space-y-12">
+        <div className="text-center space-y-6">
+          <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight">
+            Creator <span className="text-red-600">Onboarding</span>
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+            Turn your YouTube success into investment opportunities
+          </p>
+        </div>
 
-      {/* Progress Steps */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {steps.map((step) => {
-          const Icon = step.icon;
-          return (
-            <Card key={step.id} className={`relative ${step.status === 'current' ? 'border-blue-500' : ''}`}>
-              <CardHeader className="text-center">
-                <div className="mx-auto mb-2">
-                  {step.status === 'completed' ? (
-                    <CheckCircle className="h-8 w-8 text-green-600" />
-                  ) : (
-                    <Icon className={`h-8 w-8 ${step.status === 'current' ? 'text-blue-600' : 'text-gray-400'}`} />
-                  )}
+        {/* Progress Steps */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {steps.map((step) => {
+            const Icon = step.icon;
+            return (
+              <div key={step.id} className={`youtube-card p-6 ${step.status === 'current' ? 'border border-red-600' : ''}`}>
+                <div className="text-center space-y-4">
+                  <div className="mx-auto">
+                    {step.status === 'completed' ? (
+                      <div className="w-12 h-12 bg-green-600/20 rounded-full flex items-center justify-center">
+                        <CheckCircle className="h-6 w-6 text-green-400" />
+                      </div>
+                    ) : (
+                      <div className={`w-12 h-12 ${step.status === 'current' ? 'bg-red-600/20' : 'bg-zinc-800'} rounded-full flex items-center justify-center`}>
+                        <Icon className={`h-6 w-6 ${step.status === 'current' ? 'text-red-600' : 'text-gray-400'}`} />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">{step.title}</h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      {step.description}
+                    </p>
+                  </div>
+                  <Badge 
+                    variant={step.status === 'completed' ? 'default' : step.status === 'current' ? 'secondary' : 'outline'}
+                    className={
+                      step.status === 'completed' 
+                        ? 'bg-green-600 text-white' 
+                        : step.status === 'current' 
+                        ? 'bg-red-600 text-white' 
+                        : 'bg-zinc-700 text-gray-400 border-zinc-600'
+                    }
+                  >
+                    {step.status === 'completed' ? 'Complete' : step.status === 'current' ? 'Current' : 'Pending'}
+                  </Badge>
                 </div>
-                <CardTitle className="text-lg">{step.title}</CardTitle>
-                <CardDescription className="text-sm">
-                  {step.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-center">
-                <Badge variant={step.status === 'completed' ? 'default' : step.status === 'current' ? 'secondary' : 'outline'}>
-                  {step.status === 'completed' ? 'Complete' : step.status === 'current' ? 'Current' : 'Pending'}
-                </Badge>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+              </div>
+            );
+          })}
+        </div>
 
-      {/* Current Step Content */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Get Started as a Creator</CardTitle>
-          <CardDescription>
-            Join hundreds of successful YouTube creators who are raising funds through revenue sharing
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center space-y-2">
-              <div className="bg-blue-100 rounded-full p-4 w-16 h-16 mx-auto flex items-center justify-center">
-                <span className="text-2xl font-bold text-blue-600">1M+</span>
-              </div>
-              <h3 className="font-semibold">Minimum Subscribers</h3>
-              <p className="text-sm text-gray-600">Established audience required</p>
-            </div>
-            <div className="text-center space-y-2">
-              <div className="bg-green-100 rounded-full p-4 w-16 h-16 mx-auto flex items-center justify-center">
-                <span className="text-2xl font-bold text-green-600">$5K+</span>
-              </div>
-              <h3 className="font-semibold">Monthly Revenue</h3>
-              <p className="text-sm text-gray-600">Proven monetization track record</p>
-            </div>
-            <div className="text-center space-y-2">
-              <div className="bg-purple-100 rounded-full p-4 w-16 h-16 mx-auto flex items-center justify-center">
-                <span className="text-2xl font-bold text-purple-600">6mo+</span>
-              </div>
-              <h3 className="font-semibold">Channel Age</h3>
-              <p className="text-sm text-gray-600">Consistent content creation</p>
-            </div>
-          </div>
-
-          <div className="text-center space-y-4">
-            <p className="text-gray-600">
-              Ready to get started? Connect your Google account to verify your YouTube channel.
+        {/* Current Step Content */}
+        <div className="youtube-card">
+          <div className="p-8 border-b border-zinc-800">
+            <h2 className="text-2xl font-bold text-white">Get Started as a Creator</h2>
+            <p className="text-gray-400 text-lg mt-2">
+              Join hundreds of successful YouTube creators who are raising funds through revenue sharing
             </p>
-            {!session ? (
-              <Button size="lg" onClick={() => window.location.href = '/api/auth/signin'}>
-                Sign In with Google
-              </Button>
-            ) : (
-              <Button size="lg" onClick={() => setCurrentStep(2)}>
-                Continue Setup
-              </Button>
-            )}
           </div>
-        </CardContent>
-      </Card>
+          <div className="p-8 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-red-600/10 rounded-full p-4 mx-auto flex items-center justify-center">
+                  <span className="text-2xl font-bold text-red-600">1M+</span>
+                </div>
+                <h3 className="font-semibold text-white">Minimum Subscribers</h3>
+                <p className="text-sm text-gray-400">Established audience required</p>
+              </div>
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-green-600/10 rounded-full p-4 mx-auto flex items-center justify-center">
+                  <span className="text-2xl font-bold text-green-400">$5K+</span>
+                </div>
+                <h3 className="font-semibold text-white">Monthly Revenue</h3>
+                <p className="text-sm text-gray-400">Proven monetization track record</p>
+              </div>
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-purple-600/10 rounded-full p-4 mx-auto flex items-center justify-center">
+                  <span className="text-2xl font-bold text-purple-400">6mo+</span>
+                </div>
+                <h3 className="font-semibold text-white">Channel Age</h3>
+                <p className="text-sm text-gray-400">Consistent content creation</p>
+              </div>
+            </div>
 
-      {/* Benefits Section */}
-      <div className="bg-gray-50 rounded-lg p-8">
-        <h2 className="text-2xl font-bold text-center mb-6">Why Creators Choose Our Platform</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <h3 className="font-semibold flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              Keep Creative Control
-            </h3>
-            <p className="text-gray-600">Maintain full ownership and creative freedom of your channel</p>
+            <div className="text-center space-y-6">
+              <p className="text-gray-400 text-lg">
+                Ready to get started? Connect your Google account to verify your YouTube channel.
+              </p>
+              {!session ? (
+                <Button className="youtube-button text-xl px-8 py-3 h-auto" onClick={() => window.location.href = '/api/auth/signin'}>
+                  Sign In with Google
+                </Button>
+              ) : (
+                <Button className="youtube-button text-xl px-8 py-3 h-auto" onClick={() => setCurrentStep(2)}>
+                  Continue Setup
+                </Button>
+              )}
+            </div>
           </div>
-          <div className="space-y-2">
-            <h3 className="font-semibold flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              Upfront Capital
-            </h3>
-            <p className="text-gray-600">Get funding now for future growth and equipment</p>
-          </div>
-          <div className="space-y-2">
-            <h3 className="font-semibold flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              Fair Revenue Split
-            </h3>
-            <p className="text-gray-600">Set your own terms and percentage shares</p>
-          </div>
-          <div className="space-y-2">
-            <h3 className="font-semibold flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              Transparent Reporting
-            </h3>
-            <p className="text-gray-600">Automated revenue tracking and investor updates</p>
+        </div>
+
+        {/* Benefits Section */}
+        <div className="youtube-card p-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-white text-center mb-8">
+            Why Creators Choose Our Platform
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-3">
+              <h3 className="font-semibold text-white flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-600/20 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-4 w-4 text-green-400" />
+                </div>
+                Keep Creative Control
+              </h3>
+              <p className="text-gray-400 ml-11">Maintain full ownership and creative freedom of your channel</p>
+            </div>
+            <div className="space-y-3">
+              <h3 className="font-semibold text-white flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-600/20 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-4 w-4 text-green-400" />
+                </div>
+                Upfront Capital
+              </h3>
+              <p className="text-gray-400 ml-11">Get funding now for future growth and equipment</p>
+            </div>
+            <div className="space-y-3">
+              <h3 className="font-semibold text-white flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-600/20 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-4 w-4 text-green-400" />
+                </div>
+                Fair Revenue Split
+              </h3>
+              <p className="text-gray-400 ml-11">Set your own terms and percentage shares</p>
+            </div>
+            <div className="space-y-3">
+              <h3 className="font-semibold text-white flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-600/20 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-4 w-4 text-green-400" />
+                </div>
+                Transparent Reporting
+              </h3>
+              <p className="text-gray-400 ml-11">Automated revenue tracking and investor updates</p>
+            </div>
           </div>
         </div>
       </div>

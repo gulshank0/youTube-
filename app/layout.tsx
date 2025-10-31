@@ -19,23 +19,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className="bg-zinc-950 text-white font-sans">
         <AuthProvider>
-          {/* Dark pattern background */}
-          <div className="fixed inset-0 bg-dark-pattern bg-floating-elements -z-10"></div>
-          
-          {/* Dark floating decorative elements */}
-          <div className="fixed top-20 left-1/4 w-32 h-32 bg-gray-800/30 rounded-full blur-xl animate-pulse-glow -z-10"></div>
-          <div className="fixed bottom-20 right-1/3 w-40 h-40 bg-gray-700/20 rounded-full blur-xl animate-pulse-glow -z-10" style={{animationDelay: '1.5s'}}></div>
-          <div className="fixed top-1/2 right-10 w-24 h-24 bg-gray-900/40 rounded-full blur-xl animate-pulse-glow -z-10" style={{animationDelay: '3s'}}></div>
-          
-          <div className="relative z-10 min-h-screen">
-            <div className="space-y-18">
-              <Navbar />
-              <main className="container mx-auto px-4 py-8">
-                {children}
-              </main>
-            </div>
+          <div className="min-h-screen bg-zinc-950">
+            <Navbar />
+            <main className="pt-16">
+              {children}
+            </main>
             <Toaster />
           </div>
         </AuthProvider>

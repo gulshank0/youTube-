@@ -1,39 +1,59 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Play, TrendingUp, Users, DollarSign } from "lucide-react";
 
 export function HeroSection() {
   return (
-    <section className="relative text-center space-y-8 py-20">
-      {/* Dark background overlay */}
-      <div className="absolute inset-0 bg-black/20 rounded-3xl"></div>
-      
-      {/* Dark floating elements */}
-      <div className="absolute top-10 left-10 w-16 h-16 bg-gray-800/40 rounded-xl rotate-12 animate-pulse-glow"></div>
-      <div className="absolute top-20 right-20 w-12 h-12 bg-gray-700/30 rounded-full animate-bounce" style={{animationDelay: '0.5s'}}></div>
-      <div className="absolute bottom-10 left-1/3 w-8 h-8 bg-gray-600/50 rounded-lg rotate-45 animate-pulse" style={{animationDelay: '1s'}}></div>
-      
-      {/* Dark play button icon */}
-      <div className="absolute top-1/2 right-1/4 transform -translate-y-1/2">
-        <div className="w-20 h-20 bg-gray-900/20 rounded-full flex items-center justify-center animate-pulse-glow">
-          <div className="w-0 h-0 border-l-8 border-l-gray-400/60 border-y-6 border-y-transparent ml-1"></div>
-        </div>
-      </div>
-      
-      <div className="relative z-10">
-        <h1 className="text-5xl font-bold text-white drop-shadow-lg">
-          Invest in YouTube Creators
-        </h1>
-        <p className="text-xl text-gray-300 max-w-3xl mx-auto drop-shadow-md">
-          Join the creator economy revolution. Buy revenue shares in successful YouTube channels 
-          and earn returns as they grow their audience and monetization.
-        </p>
-        <div className="flex gap-4 justify-center">
-          <Link href="/marketplace">
-            <Button size="lg" className="bg-gray-100 text-gray-900 hover:bg-white shadow-lg">Browse Opportunities</Button>
-          </Link>
-          <Link href="/creator/onboard">
-            <Button variant="outline" size="lg" className="border-gray-400 text-gray-300 hover:bg-gray-800 hover:text-white shadow-lg">List Your Channel</Button>
-          </Link>
+    <section className="relative bg-zinc-950 py-20 px-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center space-y-8">
+          <div className="space-y-4">
+            <h1 className="text-4xl md:text-7xl font-bold text-white leading-tight">
+              Invest in YouTube <span className="text-red-600">Creators</span>
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+              Join the creator economy revolution. Buy revenue shares in successful YouTube channels 
+              and earn returns as they grow their audience and monetization.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Link href="/marketplace">
+              <Button className="youtube-button text-xl px-8 py-3 h-auto">
+                Browse Opportunities
+              </Button>
+            </Link>
+            <Link href="/creator/onboard">
+              <Button className="youtube-button-outline text-xl px-8 py-3 h-auto bg-zinc-600 hover:bg-zinc-500">
+                List Your Channel
+              </Button>
+            </Link>
+          </div>
+
+          {/* Stats Section - YouTube Style */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 max-w-4xl mx-auto">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 bg-red-600/10 rounded-full flex items-center justify-center mx-auto">
+                <TrendingUp className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-white">$2M+</h3>
+              <p className="text-gray-400">Total Investment Volume</p>
+            </div>
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 bg-red-600/10 rounded-full flex items-center justify-center mx-auto">
+                <Users className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-white">500+</h3>
+              <p className="text-gray-400">Active Creators</p>
+            </div>
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 bg-red-600/10 rounded-full flex items-center justify-center mx-auto">
+                <DollarSign className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-white">15%</h3>
+              <p className="text-gray-400">Average Annual Return</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>

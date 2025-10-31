@@ -2,7 +2,7 @@ import { google } from 'googleapis';
 import { prisma } from '@/lib/prisma';
 
 export class YouTubeService {
-  private youtube;
+  private readonly youtube;
 
   constructor(accessToken?: string) {
     const auth = new google.auth.OAuth2(
@@ -15,6 +15,65 @@ export class YouTubeService {
     }
 
     this.youtube = google.youtube({ version: 'v3', auth });
+  }
+
+  // Add search functionality
+  static async searchChannels(query: string, maxResults: number = 20) {
+    if (!process.env.YOUTUBE_API_KEY) {
+      throw new Error('YouTube API key not configured');
+    }
+
+    const youtube = google.youtube({
+      version: 'v3',
+      auth: process.env.YOUTUBE_API_KEY
+    });
+
+    try {
+      // Search for channels
+      const searchResponse = await youtube.search.list({
+        part: ['snippet'],
+        q: query,
+        type: ['channel'],
+        maxResults,
+        order: 'relevance'
+      });
+
+      if (!searchResponse.data.items?.length) {
+        return [];
+      }
+
+      // Get channel IDs
+      const channelIds = searchResponse.data.items
+        .map(item => item.snippet?.channelId)
+        .filter(Boolean) as string[];
+
+      if (!channelIds.length) {
+        return [];
+      }
+
+      // Get detailed channel information
+      const channelsResponse = await youtube.channels.list({
+        part: ['snippet', 'statistics', 'brandingSettings'],
+        id: channelIds
+      });
+
+      return channelsResponse.data.items?.map(channel => ({
+        id: channel.id,
+        title: channel.snippet?.title || 'Unknown Channel',
+        description: channel.snippet?.description || '',
+        thumbnails: channel.snippet?.thumbnails || {},
+        subscriberCount: Number.parseInt(channel.statistics?.subscriberCount || '0'),
+        viewCount: Number.parseInt(channel.statistics?.viewCount || '0'),
+        videoCount: Number.parseInt(channel.statistics?.videoCount || '0'),
+        country: channel.snippet?.country || '',
+        publishedAt: channel.snippet?.publishedAt || '',
+        customUrl: channel.snippet?.customUrl || '',
+        bannerImageUrl: channel.brandingSettings?.image?.bannerExternalUrl || ''
+      })) || [];
+    } catch (error) {
+      console.error('YouTube search error:', error);
+      throw new Error('Failed to search YouTube creators');
+    }
   }
 
   async verifyChannelOwnership(userId: string, channelId: string): Promise<boolean> {
@@ -64,9 +123,9 @@ export class YouTubeService {
         channelId: channel.id,
         title: channel.snippet?.title,
         description: channel.snippet?.description,
-        subscriberCount: parseInt(channel.statistics?.subscriberCount || '0'),
-        viewCount: parseInt(channel.statistics?.viewCount || '0'),
-        videoCount: parseInt(channel.statistics?.videoCount || '0'),
+        subscriberCount: Number.parseInt(channel.statistics?.subscriberCount || '0'),
+        viewCount: Number.parseInt(channel.statistics?.viewCount || '0'),
+        videoCount: Number.parseInt(channel.statistics?.videoCount || '0'),
         thumbnails: channel.snippet?.thumbnails,
         country: channel.snippet?.country,
       };
