@@ -36,7 +36,7 @@ export function HeroSection() {
               <div className="w-12 h-12 bg-red-600/10 rounded-full flex items-center justify-center mx-auto">
                 <TrendingUp className="w-6 h-6 text-red-600" />
               </div>
-              <h3 className="text-2xl font-bold text-white">$2M+</h3>
+              <h3 className="text-2xl font-bold text-white">$1M+</h3>
               <p className="text-gray-400">Total Investment Volume</p>
             </div>
             <div className="text-center space-y-2">
