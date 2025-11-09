@@ -20,12 +20,12 @@ export function HeroSection() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link href="/marketplace">
               <Button className="youtube-button text-xl px-8 py-3 h-auto">
-                Browse Opportunities
+                Browse Opportunities with Searches
               </Button>
             </Link>
             <Link href="/creator/onboard">
               <Button className="youtube-button-outline text-xl px-8 py-3 h-auto bg-zinc-600 hover:bg-zinc-500">
-                List Your Channel
+                List Your YouTube Channel
               </Button>
             </Link>
           </div>
@@ -36,14 +36,14 @@ export function HeroSection() {
               <div className="w-12 h-12 bg-red-600/10 rounded-full flex items-center justify-center mx-auto">
                 <TrendingUp className="w-6 h-6 text-red-600" />
               </div>
-              <h3 className="text-2xl font-bold text-white">$2M+</h3>
+              <h3 className="text-2xl font-bold text-white">$1M+</h3>
               <p className="text-gray-400">Total Investment Volume</p>
             </div>
             <div className="text-center space-y-2">
               <div className="w-12 h-12 bg-red-600/10 rounded-full flex items-center justify-center mx-auto">
                 <Users className="w-6 h-6 text-red-600" />
               </div>
-              <h3 className="text-2xl font-bold text-white">500+</h3>
+              <h3 className="text-2xl font-bold text-white">50+</h3>
               <p className="text-gray-400">Active Creators</p>
             </div>
             <div className="text-center space-y-2">
