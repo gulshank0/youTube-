@@ -25,7 +25,7 @@ export function HeroSection() {
             </Link>
             <Link href="/creator/onboard">
               <Button className="youtube-button-outline text-xl px-8 py-3 h-auto bg-zinc-600 hover:bg-zinc-500">
-                List Your Channel
+                List Your YouTube Channel
               </Button>
             </Link>
           </div>
