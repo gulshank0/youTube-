@@ -80,14 +80,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create payment intent
-    const payment = await paymentService.createPaymentIntent(
-      totalAmount,
-      session.user.id,
-      offeringId
-    );
-
-    // Create pending investment record
+    // Create pending investment record first
     const investment = await prisma.investment.create({
       data: {
         investorId: session.user.id,
@@ -97,6 +90,14 @@ export async function POST(request: NextRequest) {
         status: 'PENDING',
       },
     });
+
+    // Create payment intent with investment ID
+    const payment = await paymentService.createPaymentIntent(
+      totalAmount,
+      session.user.id,
+      offeringId,
+      investment.id
+    );
 
     // Create transaction record
     await prisma.transaction.create({

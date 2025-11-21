@@ -41,6 +41,12 @@ export default function Navbar() {
           >
             Marketplace
           </Link>
+          <Link
+            href="/channels-market"
+            className="px-4 py-2 text-lg font-medium text-gray-300 hover:bg-zinc-800/50 hover:text-white rounded-lg transition-colors"
+          >
+            Channels-Market
+          </Link>
           <Link 
             href="/search" 
             className="px-4 py-2 text-lg font-medium text-gray-300 hover:bg-zinc-800/50 hover:text-white rounded-lg transition-colors flex items-center space-x-2"
@@ -104,7 +110,7 @@ export default function Navbar() {
               <div className="flex items-center space-x-3">
                 <Button 
                   variant="outline" 
-                  onClick={() => router.push('auth/signin')}
+                  onClick={() => router.push('/auth/signin')}
                   className="text-lg text-gray-300 h-9 border-zinc-700/50 bg-transparent hover:bg-zinc-800/50 hover:text-white cursor-pointer"
                 >
                   Sign In

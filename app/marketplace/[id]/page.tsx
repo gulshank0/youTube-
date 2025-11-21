@@ -49,7 +49,7 @@ export default function OfferingDetailPage() {
       const data = await res.json();
       if (data.success) {
         // Redirect to payment page with clientSecret
-        window.location.href = `/payment?clientSecret=${data.payment.clientSecret}`;
+        router.push(`/payment?clientSecret=${data.payment.clientSecret}`);
       } else {
         alert(data.error || 'Investment failed');
       }

@@ -17,6 +17,8 @@ export default function MarketplacePage() {
   }, []);
 
   const fetchOfferings = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/marketplace');
       
@@ -62,7 +64,7 @@ export default function MarketplacePage() {
               </ol>
             </div>
           </div>
-          <Button className="youtube-button" onClick={() => window.location.reload()}>
+          <Button className="youtube-button" onClick={fetchOfferings}>
             Try Again
           </Button>
         </div>

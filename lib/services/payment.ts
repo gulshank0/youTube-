@@ -6,7 +6,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 export class PaymentService {
-  async createPaymentIntent(amount: number, userId: string, offeringId: string) {
+  async createPaymentIntent(amount: number, userId: string, offeringId: string, investmentId: string) {
     try {
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(amount * 100), // Convert to cents
@@ -14,6 +14,7 @@ export class PaymentService {
         metadata: {
           userId,
           offeringId,
+          investmentId,
           type: 'investment',
         },
       });
@@ -33,8 +34,7 @@ export class PaymentService {
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
       
       if (paymentIntent.status === 'succeeded') {
-        // Create investment record
-        const { userId, offeringId } = paymentIntent.metadata;
+        const { userId, offeringId, investmentId } = paymentIntent.metadata;
         
         const offering = await prisma.offering.findUnique({
           where: { id: offeringId },
@@ -46,15 +46,29 @@ export class PaymentService {
 
         const shares = Math.floor(paymentIntent.amount / 100 / offering.pricePerShare);
         
-        const investment = await prisma.investment.create({
-          data: {
-            investorId: userId,
-            offeringId,
-            shares,
-            totalAmount: paymentIntent.amount / 100,
-            status: 'CONFIRMED',
-          },
-        });
+        let investment;
+        
+        if (investmentId) {
+          // Update existing pending investment
+          investment = await prisma.investment.update({
+            where: { id: investmentId },
+            data: {
+              status: 'CONFIRMED',
+              updatedAt: new Date(),
+            },
+          });
+        } else {
+          // Fallback: Create new investment record if ID missing
+          investment = await prisma.investment.create({
+            data: {
+              investorId: userId,
+              offeringId,
+              shares,
+              totalAmount: paymentIntent.amount / 100,
+              status: 'CONFIRMED',
+            },
+          });
+        }
 
         // Update offering available shares
         await prisma.offering.update({
@@ -65,6 +79,18 @@ export class PaymentService {
             },
           },
         });
+
+        // Update transaction status if exists
+        const transaction = await prisma.transaction.findFirst({
+            where: { stripeId: paymentIntentId }
+        });
+
+        if (transaction) {
+            await prisma.transaction.update({
+                where: { id: transaction.id },
+                data: { status: 'COMPLETED' }
+            });
+        }
 
         return investment;
       }

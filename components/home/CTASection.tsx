@@ -12,7 +12,7 @@ export function CTASection({
   title = "Ready to Get Started?",
   description = "Join thousands of investors supporting the next generation of creators",
   buttonText = "Create Your Account",
-  buttonHref = "/auth/signup"
+  buttonHref = "/auth/signin"
 }: CTASectionProps) {
   return (
     <section className="bg-zinc-950 py-20 px-4">

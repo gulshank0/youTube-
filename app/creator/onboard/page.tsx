@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +10,7 @@ import { CheckCircle, Youtube, DollarSign, Users, Shield } from 'lucide-react';
 
 export default function CreatorOnboardPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
 
   const steps = [
@@ -134,7 +136,7 @@ export default function CreatorOnboardPage() {
                 Ready to get started? Connect your Google account to verify your YouTube channel.
               </p>
               {!session ? (
-                <Button className="youtube-button text-xl px-8 py-3 h-auto" onClick={() => window.location.href = '/api/auth/signin'}>
+                <Button className="youtube-button text-xl px-8 py-3 h-auto" onClick={() => router.push('/auth/signin')}>
                   Sign In with Google
                 </Button>
               ) : (

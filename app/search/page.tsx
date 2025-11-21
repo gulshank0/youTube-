@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Search, ExternalLink, TrendingUp } from 'lucide-react';
@@ -23,6 +24,7 @@ interface Creator {
 }
 
 export default function SearchPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(false);
@@ -78,7 +80,7 @@ export default function SearchPage() {
 
   const handleInterest = (creator: Creator) => {
     // Navigate to marketplace or investment page for this creator
-    globalThis.location.href = `/marketplace?creator=${encodeURIComponent(creator.title)}&channelId=${creator.id}`;
+    router.push(`/marketplace?creator=${encodeURIComponent(creator.title)}&channelId=${creator.id}`);
   };
 
   const getChannelImage = (creator: Creator) => {

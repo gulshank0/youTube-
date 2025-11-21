@@ -16,11 +16,12 @@ export default function SignIn() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
+  const callbackUrl = searchParams.get('callbackUrl') || '/';
 
   useEffect(() => {
     // Redirect if already signed in
     if (status === 'authenticated' && session) {
-      router.push('/');
+      router.push(callbackUrl);
       return;
     }
 
@@ -38,12 +39,12 @@ export default function SignIn() {
     if (status !== 'loading') {
       setupProviders();
     }
-  }, [session, status, router]);
+  }, [session, status, router, callbackUrl]);
 
   const handleSignIn = async (providerId: string) => {
     setSignInLoading(true);
     try {
-      await signIn(providerId, { callbackUrl: '/' });
+      await signIn(providerId, { callbackUrl });
     } catch (error) {
       console.error('Sign in error:', error);
       setSignInLoading(false);
