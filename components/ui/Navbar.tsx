@@ -50,7 +50,7 @@ export default function Navbar() {
             <Search className="w-5 h-5" />
           </Link>
  <Link
-            href="/channels-market"
+            href="/marketChannel"
             className="px-4 py-2 text-lg font-medium text-gray-300 hover:bg-zinc-800/50 hover:text-white rounded-lg transition-colors"
           >
             Channels Market

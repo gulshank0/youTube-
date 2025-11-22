@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { DollarSign, Users, Eye, ArrowUpRight, ArrowDownRight, TrendingUp, BarChart3 } from 'lucide-react';
+import { DollarSign, Users, Eye, ArrowUpRight, ArrowDownRight, TrendingUp, BarChart3, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ChannelMetrics {
@@ -31,6 +31,7 @@ export default function ChannelsMarketPage() {
   const [compareMode, setCompareMode] = useState(false);
   const [comparedChannels, setComparedChannels] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'value' | 'change' | 'volume' | 'marketCap'>('value');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchMarketData();
@@ -136,6 +137,11 @@ export default function ChannelsMarketPage() {
     }
   });
 
+  // Filter channels based on search query
+  const filteredChannels = sortedChannels.filter(channel =>
+    channel.channelName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const selectedChannelData = channels.find(c => c.id === selectedChannel);
   const comparedChannelsData = channels.filter(c => comparedChannels.includes(c.id));
 
@@ -203,6 +209,23 @@ export default function ChannelsMarketPage() {
           </div>
         </div>
 
+        {/* Search Bar */}
+        <div className="flex items-center gap-2 bg-zinc-800 p-3 rounded-lg">
+          <Search className="w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search creators..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1 bg-transparent text-white placeholder-gray-400 focus:outline-none"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+
         {/* Market Overview Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="youtube-card p-4">
@@ -232,7 +255,7 @@ export default function ChannelsMarketPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Market List */}
           <div className="lg:col-span-1">
-            <div className="youtube-card">
+            <div className="youtube-card max-h-[1300px] flex flex-col">
               <div className="p-4 border-b border-zinc-800">
                 <h2 className="text-xl font-semibold text-white mb-3">Creator Rankings</h2>
                 <div className="flex gap-2">
@@ -262,8 +285,8 @@ export default function ChannelsMarketPage() {
                   </button>
                 </div>
               </div>
-              <div className="max-h-[600px] overflow-y-auto">
-                {sortedChannels.map((channel) => (
+              <div className="overflow-y-auto">
+                {filteredChannels.map((channel) => (
                   <div
                     key={channel.id}
                     onClick={() => !compareMode && setSelectedChannel(channel.id)}
@@ -439,16 +462,16 @@ export default function ChannelsMarketPage() {
                   <div className="p-4">
                     <ResponsiveContainer width="100%" height={250}>
                       <BarChart data={selectedChannelData.revenueData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
-                        <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#a1a1aa' }} />
-                        <YAxis tick={{ fontSize: 12, fill: '#a1a1aa' }} tickFormatter={(value) => `$${formatNumber(value)}`} />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px' }}
-                          labelStyle={{ color: '#a1a1aa' }}
-                          itemStyle={{ color: '#ffffff' }}
-                          formatter={(value: any) => [formatCurrency(value), 'Revenue']}
-                        />
-                        <Bar dataKey="revenue" fill="#10b981" radius={[8, 8, 0, 0]} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
+                      <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#a1a1aa' }} />
+                      <YAxis tick={{ fontSize: 12, fill: '#a1a1aa' }} tickFormatter={(value) => `$${formatNumber(value)}`} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#000000', border: '1px solid #3f3f46', borderRadius: '8px' }}
+                        labelStyle={{ color: '#a1a1aa' }}
+                        itemStyle={{ color: '#ffffff' }}
+                        formatter={(value: any) => [formatCurrency(value), 'Revenue']}
+                      />
+                      <Bar dataKey="revenue" fill="#10b981" radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -494,7 +517,7 @@ export default function ChannelsMarketPage() {
                   </div>
                   <div className="p-4">
                     <ResponsiveContainer width="100%" height={350}>
-                      <LineChart>
+                        <LineChart>
                         <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
                         <XAxis
                           dataKey="date"
@@ -505,7 +528,7 @@ export default function ChannelsMarketPage() {
                         />
                         <YAxis tick={{ fontSize: 12, fill: '#a1a1aa' }} tickFormatter={(value) => `$${value}`} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px' }}
+                          contentStyle={{ backgroundColor: '#000000', border: '1px solid #3f3f46', borderRadius: '8px' }}
                           labelStyle={{ color: '#a1a1aa' }}
                           itemStyle={{ color: '#ffffff' }}
                           formatter={(value: any) => formatCurrency(value)}
@@ -514,19 +537,19 @@ export default function ChannelsMarketPage() {
                         {comparedChannelsData.map((channel, index) => {
                           const colors = ['#ef4444', '#10b981', '#f59e0b', '#3b82f6'];
                           return (
-                            <Line
-                              key={channel.id}
-                              data={channel.historicalData}
-                              type="monotone"
-                              dataKey="value"
-                              stroke={colors[index]}
-                              strokeWidth={2}
-                              name={channel.channelName}
-                              dot={false}
-                            />
+                          <Line
+                            key={channel.id}
+                            data={channel.historicalData}
+                            type="monotone"
+                            dataKey="value"
+                            stroke={colors[index]}
+                            strokeWidth={2}
+                            name={channel.channelName}
+                            dot={false}
+                          />
                           );
                         })}
-                      </LineChart>
+                        </LineChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
