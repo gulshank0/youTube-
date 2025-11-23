@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Search, ExternalLink, TrendingUp } from 'lucide-react';
+import { Search, ExternalLink, TrendingUp, Clock, X } from 'lucide-react';
 
 interface Creator {
   id: string;
@@ -23,6 +23,21 @@ interface Creator {
   customUrl?: string;
 }
 
+interface SearchState {
+  query: string;
+  results: Creator[];
+  timestamp: number;
+}
+
+interface SearchHistoryItem {
+  query: string;
+  timestamp: number;
+}
+
+const SEARCH_STATE_KEY = 'youtube_search_state';
+const SEARCH_HISTORY_KEY = 'youtube_search_history';
+const MAX_HISTORY_ITEMS = 10;
+
 export default function SearchPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,6 +45,92 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Load search state and history on component mount
+  useEffect(() => {
+    try {
+      // Restore previous search state
+      const savedState = localStorage.getItem(SEARCH_STATE_KEY);
+      if (savedState) {
+        const state: SearchState = JSON.parse(savedState);
+        // Only restore if the search was done within the last hour
+        const oneHourAgo = Date.now() - (60 * 60 * 1000);
+        if (state.timestamp > oneHourAgo) {
+          setSearchQuery(state.query);
+          setCreators(state.results);
+          setHasSearched(state.results.length > 0 || state.query !== '');
+        }
+      }
+
+      // Load search history
+      const savedHistory = localStorage.getItem(SEARCH_HISTORY_KEY);
+      if (savedHistory) {
+        setSearchHistory(JSON.parse(savedHistory));
+      }
+    } catch (err) {
+      console.error('Error loading saved search state:', err);
+    }
+  }, []);
+
+  // Save search state whenever it changes
+  useEffect(() => {
+    if (hasSearched) {
+      try {
+        const state: SearchState = {
+          query: searchQuery,
+          results: creators,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem(SEARCH_STATE_KEY, JSON.stringify(state));
+      } catch (err) {
+        console.error('Error saving search state:', err);
+      }
+    }
+  }, [searchQuery, creators, hasSearched]);
+
+  const addToSearchHistory = (query: string) => {
+    try {
+      const newHistoryItem: SearchHistoryItem = {
+        query,
+        timestamp: Date.now(),
+      };
+
+      // Remove duplicate if exists
+      const filteredHistory = searchHistory.filter(
+        (item) => item.query.toLowerCase() !== query.toLowerCase()
+      );
+
+      // Add new item at the beginning and limit to MAX_HISTORY_ITEMS
+      const updatedHistory = [newHistoryItem, ...filteredHistory].slice(0, MAX_HISTORY_ITEMS);
+      
+      setSearchHistory(updatedHistory);
+      localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updatedHistory));
+    } catch (err) {
+      console.error('Error saving search history:', err);
+    }
+  };
+
+  const removeFromHistory = (query: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updatedHistory = searchHistory.filter((item) => item.query !== query);
+    setSearchHistory(updatedHistory);
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updatedHistory));
+  };
+
+  const clearHistory = () => {
+    setSearchHistory([]);
+    localStorage.removeItem(SEARCH_HISTORY_KEY);
+  };
+
+  const searchFromHistory = (query: string) => {
+    setSearchQuery(query);
+    setShowHistory(false);
+    // Trigger search
+    const event = { preventDefault: () => {} } as React.FormEvent;
+    performSearch(query, event);
+  };
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
@@ -45,16 +146,17 @@ export default function SearchPage() {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const searchCreators = async (e: React.FormEvent) => {
+  const performSearch = async (query: string, e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return;
 
     setLoading(true);
     setError(null);
     setHasSearched(true);
 
     try {
-      const response = await fetch(`/api/search/creators?q=${encodeURIComponent(searchQuery)}&maxResults=20`);
+      const response = await fetch(`/api/search/creators?q=${encodeURIComponent(trimmedQuery)}&maxResults=20`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -62,6 +164,7 @@ export default function SearchPage() {
       }
 
       setCreators(data.creators || []);
+      addToSearchHistory(trimmedQuery);
     } catch (err) {
       console.error('Search error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred while searching');
@@ -69,6 +172,10 @@ export default function SearchPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const searchCreators = (e: React.FormEvent) => {
+    performSearch(searchQuery, e);
   };
 
   const openChannel = (creator: Creator) => {
@@ -109,9 +216,49 @@ export default function SearchPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setShowHistory(true)}
+                  onBlur={() => setTimeout(() => setShowHistory(false), 200)}
                   placeholder="Search for YouTube creators..."
                   className="w-full h-12 px-6 bg-transparent text-white placeholder-gray-400 focus:outline-none"
                 />
+                
+                {/* Search History Dropdown */}
+                {showHistory && searchHistory.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 max-h-80 overflow-y-auto">
+                    <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-700">
+                      <div className="flex items-center text-gray-400 text-sm">
+                        <Clock className="w-4 h-4 mr-2" />
+                        Recent Searches
+                      </div>
+                      <button
+                        type="button"
+                        onClick={clearHistory}
+                        className="text-xs text-gray-500 hover:text-red-500 transition-colors"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                    {searchHistory.map((item, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => searchFromHistory(item.query)}
+                        className="w-full px-4 py-3 text-left hover:bg-zinc-800 transition-colors flex items-center justify-between group"
+                      >
+                        <div className="flex items-center flex-1 min-w-0">
+                          <Search className="w-4 h-4 mr-3 text-gray-500 flex-shrink-0" />
+                          <span className="text-white truncate">{item.query}</span>
+                        </div>
+                        <button
+                          onClick={(e) => removeFromHistory(item.query, e)}
+                          className="ml-2 p-1 opacity-0 group-hover:opacity-100 hover:bg-zinc-700 rounded transition-all"
+                        >
+                          <X className="w-4 h-4 text-gray-400 hover:text-red-500" />
+                        </button>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <button 
                 type="submit"

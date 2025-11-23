@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Youtube, TrendingUp, Users, DollarSign, Clock, Shield } from 'lucide-react';
+import { ArrowLeft, Youtube, TrendingUp, Users, DollarSign, Clock, Shield, Play } from 'lucide-react';
 import Link from 'next/link';
 
 export default function OfferingDetailPage() {
@@ -62,11 +62,32 @@ export default function OfferingDetailPage() {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading offering details...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!offering) {
-    return <div className="text-center py-12">Offering not found</div>;
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center">
+          <Youtube className="w-16 h-16 mx-auto text-gray-600 mb-4" />
+          <h2 className="text-xl font-semibold text-white mb-2">Offering not found</h2>
+          <p className="text-gray-400 mb-6">This offering may have been removed or doesn't exist</p>
+          <Link href="/marketplace">
+            <Button className="youtube-button">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Marketplace
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const soldShares = offering.totalShares - offering.availableShares;
@@ -74,192 +95,234 @@ export default function OfferingDetailPage() {
   const totalAmount = shares * offering.pricePerShare;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      <div>
-        <Link href="/marketplace">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Marketplace
-          </Button>
-        </Link>
-      </div>
+    <div className="min-h-screen bg-zinc-950 px-4 py-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Back Button */}
+        <div>
+          <Link href="/marketplace">
+            <Button className="youtube-button-outline">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Marketplace
+            </Button>
+          </Link>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center">
-                  <Youtube className="h-8 w-8 text-red-600" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Header Card */}
+            <div className="youtube-card p-6">
+              <div className="flex flex-col md:flex-row items-start gap-6">
+                {/* Thumbnail */}
+                <div className="relative w-full md:w-48 aspect-video bg-zinc-800 rounded-lg overflow-hidden shrink-0">
+                  <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 to-zinc-800 flex items-center justify-center">
+                    <Play className="w-12 h-12 text-white/80" />
+                  </div>
+                  <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+                    {offering.duration}mo
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <CardTitle className="text-2xl">{offering.title}</CardTitle>
-                  <CardDescription className="text-base">
-                    {offering.channel.channelName}
-                  </CardDescription>
-                </div>
-                <Badge variant="default" className="text-base px-4 py-2">
-                  {offering.sharePercentage}% Revenue Share
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <h3 className="font-semibold mb-2">About this Offering</h3>
-                <p className="text-gray-700">{offering.description}</p>
-              </div>
 
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="font-medium">Funding Progress</span>
-                  <span className="font-semibold">{fundingProgress}%</span>
+                {/* Header Info */}
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shrink-0">
+                        <Youtube className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">
+                          {offering.title}
+                        </h1>
+                        <p className="text-gray-400">
+                          {offering.channel.channelName}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className="bg-red-600/20 text-red-400 border-red-600/30 text-sm px-3 py-1">
+                      {offering.sharePercentage}% Share
+                    </Badge>
+                  </div>
+
+                  <p className="text-gray-300 leading-relaxed">
+                    {offering.description}
+                  </p>
                 </div>
-                <Progress value={fundingProgress} className="h-3" />
-                <div className="flex justify-between mt-2 text-sm text-gray-600">
+              </div>
+            </div>
+
+            {/* Funding Progress Card */}
+            <div className="youtube-card p-6">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-white">Funding Progress</h3>
+                  <span className="text-2xl font-bold text-white">{fundingProgress}%</span>
+                </div>
+                <div className="w-full bg-zinc-700 rounded-full h-3">
+                  <div 
+                    className="bg-red-600 h-3 rounded-full transition-all duration-300" 
+                    style={{ width: `${fundingProgress}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-sm text-gray-400">
                   <span>{soldShares.toLocaleString()} shares sold</span>
                   <span>{offering.availableShares.toLocaleString()} remaining</span>
                 </div>
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium">Subscribers</span>
+            {/* Channel Stats */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="youtube-card p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center">
+                    <Users className="h-5 w-5 text-blue-400" />
                   </div>
-                  <p className="text-2xl font-bold">
-                    {offering.channel.analytics?.subscriberCount?.toLocaleString() || 'N/A'}
-                  </p>
+                  <span className="text-sm font-medium text-gray-400">Subscribers</span>
                 </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium">Total Views</span>
+                <p className="text-2xl font-bold text-white">
+                  {offering.channel.analytics?.subscriberCount?.toLocaleString() || 'N/A'}
+                </p>
+              </div>
+              <div className="youtube-card p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-green-600/20 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="h-5 w-5 text-green-400" />
                   </div>
-                  <p className="text-2xl font-bold">
-                    {offering.channel.analytics?.viewCount?.toLocaleString() || 'N/A'}
-                  </p>
+                  <span className="text-sm font-medium text-gray-400">Total Views</span>
+                </div>
+                <p className="text-2xl font-bold text-white">
+                  {offering.channel.analytics?.viewCount?.toLocaleString() || 'N/A'}
+                </p>
+              </div>
+            </div>
+
+            {/* Investment Terms */}
+            <div className="youtube-card p-6">
+              <h3 className="text-xl font-semibold text-white mb-6">Investment Terms</h3>
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Revenue Share</p>
+                  <p className="text-xl font-semibold text-white">{offering.sharePercentage}%</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Duration</p>
+                  <p className="text-xl font-semibold text-white">{offering.duration} months</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Price per Share</p>
+                  <p className="text-xl font-semibold text-white">${offering.pricePerShare}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400 mb-1">Min Investment</p>
+                  <p className="text-xl font-semibold text-white">${offering.minInvestment}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Investment Terms</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Revenue Share</p>
-                  <p className="text-lg font-semibold">{offering.sharePercentage}%</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Duration</p>
-                  <p className="text-lg font-semibold">{offering.duration} months</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Price per Share</p>
-                  <p className="text-lg font-semibold">${offering.pricePerShare}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Min Investment</p>
-                  <p className="text-lg font-semibold">${offering.minInvestment}</p>
-                </div>
-              </div>
-
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div className="p-4 bg-blue-600/10 border border-blue-600/30 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Shield className="h-5 w-5 text-blue-400 mt-0.5 shrink-0" />
                   <div>
-                    <h4 className="font-semibold text-blue-900 mb-1">Investor Protection</h4>
-                    <p className="text-sm text-blue-800">
+                    <h4 className="font-semibold text-blue-400 mb-1">Investor Protection</h4>
+                    <p className="text-sm text-gray-300">
                       All investments are backed by verified revenue data and legal agreements.
                       Payouts are processed automatically based on reported monthly revenue.
                     </p>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </div>
 
-        {/* Investment Panel */}
-        <div className="lg:col-span-1">
-          <Card className="sticky top-8">
-            <CardHeader>
-              <CardTitle>Make an Investment</CardTitle>
-              <CardDescription>Choose your investment amount</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Number of Shares</label>
-                <input
-                  type="number"
-                  min="1"
-                  max={offering.availableShares}
-                  value={shares}
-                  onChange={(e) => setShares(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-full px-4 py-2 border rounded-md"
-                />
-                <p className="text-sm text-gray-600 mt-1">
-                  Max: {offering.availableShares} shares available
-                </p>
-              </div>
+          {/* Investment Panel */}
+          <div className="lg:col-span-1">
+            <div className="youtube-card p-6 sticky top-6">
+              <h3 className="text-xl font-semibold text-white mb-2">Make an Investment</h3>
+              <p className="text-gray-400 text-sm mb-6">Choose your investment amount</p>
 
-              <div className="p-4 bg-gray-50 rounded-lg space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm">Shares</span>
-                  <span className="font-medium">{shares}</span>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-white mb-2 block">
+                    Number of Shares
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={offering.availableShares}
+                    value={shares}
+                    onChange={(e) => setShares(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-red-600 transition-colors"
+                  />
+                  <p className="text-sm text-gray-400 mt-2">
+                    Max: {offering.availableShares} shares available
+                  </p>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Price per Share</span>
-                  <span className="font-medium">${offering.pricePerShare}</span>
+
+                <div className="p-4 bg-zinc-800 border border-zinc-700 rounded-lg space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Shares</span>
+                    <span className="font-medium text-white">{shares}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Price per Share</span>
+                    <span className="font-medium text-white">${offering.pricePerShare}</span>
+                  </div>
+                  <div className="border-t border-zinc-700 pt-3 flex justify-between">
+                    <span className="font-semibold text-white">Total Investment</span>
+                    <span className="font-bold text-xl text-white">
+                      ${totalAmount.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
-                <div className="border-t pt-2 flex justify-between">
-                  <span className="font-semibold">Total Investment</span>
-                  <span className="font-bold text-lg">${totalAmount.toLocaleString()}</span>
+
+                {totalAmount < offering.minInvestment && (
+                  <div className="p-3 bg-red-600/10 border border-red-600/30 rounded-lg">
+                    <p className="text-sm text-red-400">
+                      Minimum investment is ${offering.minInvestment}
+                    </p>
+                  </div>
+                )}
+
+                {offering.maxInvestment && totalAmount > offering.maxInvestment && (
+                  <div className="p-3 bg-red-600/10 border border-red-600/30 rounded-lg">
+                    <p className="text-sm text-red-400">
+                      Maximum investment is ${offering.maxInvestment}
+                    </p>
+                  </div>
+                )}
+
+                <Button
+                  className="youtube-button w-full text-base py-6"
+                  onClick={handleInvest}
+                  disabled={
+                    investing ||
+                    totalAmount < offering.minInvestment ||
+                    (offering.maxInvestment && totalAmount > offering.maxInvestment)
+                  }
+                >
+                  {investing ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    'Invest Now'
+                  )}
+                </Button>
+
+                <div className="pt-4 border-t border-zinc-700 space-y-2 text-xs text-gray-400">
+                  <p className="flex items-center gap-2">
+                    <Clock className="h-3 w-3" />
+                    Expected monthly payouts starting next month
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <DollarSign className="h-3 w-3" />
+                    {offering.sharePercentage}% of channel revenue for {offering.duration} months
+                  </p>
                 </div>
               </div>
-
-              {totalAmount < offering.minInvestment && (
-                <p className="text-sm text-red-600">
-                  Minimum investment is ${offering.minInvestment}
-                </p>
-              )}
-
-              {offering.maxInvestment && totalAmount > offering.maxInvestment && (
-                <p className="text-sm text-red-600">
-                  Maximum investment is ${offering.maxInvestment}
-                </p>
-              )}
-
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={handleInvest}
-                disabled={
-                  investing ||
-                  totalAmount < offering.minInvestment ||
-                  (offering.maxInvestment && totalAmount > offering.maxInvestment)
-                }
-              >
-                {investing ? 'Processing...' : 'Invest Now'}
-              </Button>
-
-              <div className="text-xs text-gray-500 space-y-1">
-                <p className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  Expected monthly payouts starting next month
-                </p>
-                <p className="flex items-center gap-1">
-                  <DollarSign className="h-3 w-3" />
-                  {offering.sharePercentage}% of channel revenue for {offering.duration} months
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

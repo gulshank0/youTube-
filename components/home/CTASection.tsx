@@ -6,13 +6,17 @@ interface CTASectionProps {
   description?: string;
   buttonText?: string;
   buttonHref?: string;
+  secondaryButtonText?: string;
+  secondaryButtonHref?: string;
 }
 
 export function CTASection({
   title = "Ready to Get Started?",
   description = "Join thousands of investors supporting the next generation of creators",
   buttonText = "Create Your Account",
-  buttonHref = "/auth/signin"
+  buttonHref = "/auth/signin",
+  secondaryButtonText = "Browse Creators",
+  secondaryButtonHref = "/marketplace"
 }: CTASectionProps) {
   return (
     <section className="bg-zinc-950 py-20 px-4">
@@ -26,13 +30,13 @@ export function CTASection({
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
             <Link href={buttonHref}>
-              <Button className="youtube-button text-base px-8 py-3 h-auto">
+              <Button className="youtube-button text-base px-8 py-3 h-auto cursor-pointer">
                 {buttonText}
               </Button>
             </Link>
-            <Link href="/marketplace">
-              <Button className="youtube-button-outline bg-zinc-500 text-base px-8 py-3 h-auto cursor-pointer">
-                Browse Creators
+            <Link href={secondaryButtonHref}>
+              <Button className="youtube-button-outline bg-zinc-600 hover:bg-zinc-500 text-base px-8 py-3 h-auto cursor-pointer">
+                {secondaryButtonText}
               </Button>
             </Link>
           </div>

@@ -1,8 +1,7 @@
-import NextAuth from "next-auth";
+import NextAuth, { type NextAuthOptions, type Session, type User } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
-import type { Session, User } from "next-auth";
 import type { AdapterUser } from "next-auth/adapters";
 
 declare module "next-auth" {
@@ -27,7 +26,7 @@ declare module "next-auth" {
   }
 }
 
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
@@ -92,11 +91,7 @@ export const authOptions = {
             where: { email: user.email }
           });
 
-          if (!existingUser) {
-            console.log("Creating new user:", user.email);
-            // Let PrismaAdapter handle user creation, then update with defaults
-            return true;
-          } else {
+          if (existingUser) {
             console.log("Updating existing user:", user.email);
             // Update existing user's profile information
             await prisma.user.update({
@@ -107,6 +102,10 @@ export const authOptions = {
                 emailVerified: new Date(),
               },
             });
+          } else {
+            console.log("Creating new user:", user.email);
+            // Let PrismaAdapter handle user creation, then update with defaults
+            return true;
           }
         }
         return true;
@@ -134,10 +133,10 @@ export const authOptions = {
         console.error("Error setting default user values in createUser event:", error);
       }
     },
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile, isNewUser }) {
       console.log("SignIn event:", { user: user.email, provider: account?.provider });
     },
-    async session({ session, token }) {
+    async session({ session }) {
       console.log("Session event for:", session?.user?.email);
     },
   },
@@ -152,7 +151,6 @@ export const authOptions = {
   },
   debug: process.env.NODE_ENV === 'development',
   secret: process.env.NEXTAUTH_SECRET,
-  trustHost: true, // Add this for deployment
 };
 
 const handler = NextAuth(authOptions);

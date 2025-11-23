@@ -82,6 +82,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Maximum deposit is $100,000' }, { status: 400 });
     }
 
+    // Ensure wallet exists
+    let wallet = await prisma.wallet.findUnique({
+      where: { userId: user.id },
+    });
+
+    if (!wallet) {
+      wallet = await prisma.wallet.create({
+        data: {
+          userId: user.id,
+          balance: 0,
+          totalDeposited: 0,
+          totalInvested: 0,
+          totalWithdrawn: 0,
+        },
+      });
+    }
+
     const { clientSecret, paymentIntentId } = await paymentService.createWalletDepositIntent(
       amount,
       user.id
