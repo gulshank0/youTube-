@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
 import { PaymentService } from '@/lib/services/payment';
 
@@ -8,7 +9,7 @@ const paymentService = new PaymentService();
 // GET - Fetch wallet balance and details
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -45,10 +46,36 @@ export async function GET(req: NextRequest) {
       take: 20,
     });
 
+    // Get bank accounts
+    const bankAccounts = await prisma.bankAccount.findMany({
+      where: { userId: user.id },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    // Get pending withdrawals
+    const pendingWithdrawals = await prisma.withdrawal.findMany({
+      where: { 
+        userId: user.id,
+        status: { in: ['PENDING', 'PROCESSING'] }
+      },
+      include: { bankAccount: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Get wallet ledger entries for detailed history
+    const ledgerEntries = await prisma.walletLedgerEntry.findMany({
+      where: { walletId: wallet.id },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
     return NextResponse.json({
       success: true,
       wallet,
       transactions,
+      bankAccounts,
+      pendingWithdrawals,
+      ledgerEntries,
     });
   } catch (error) {
     console.error('Error fetching wallet:', error);
@@ -59,7 +86,7 @@ export async function GET(req: NextRequest) {
 // POST - Create deposit payment intent
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
