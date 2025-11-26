@@ -59,11 +59,11 @@ export async function GET(req: NextRequest) {
         status: { in: ['PENDING', 'PROCESSING'] }
       },
       include: { bankAccount: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { requestedAt: 'desc' },
     });
 
     // Get wallet ledger entries for detailed history
-    const ledgerEntries = await prisma.walletLedgerEntry.findMany({
+    const ledgerEntries = await prisma.walletLedger.findMany({
       where: { walletId: wallet.id },
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -101,8 +101,8 @@ export async function POST(req: NextRequest) {
 
     const { amount } = await req.json();
 
-    if (!amount || amount < 50) {
-      return NextResponse.json({ error: 'Minimum deposit is ₹50' }, { status: 400 });
+    if (!amount || amount < 5) {
+      return NextResponse.json({ error: 'Minimum deposit is ₹5' }, { status: 400 });
     }
 
     if (amount > 10000000) {

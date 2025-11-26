@@ -30,8 +30,8 @@ export default function PaymentPage() {
 
     const amount = Number.parseFloat(depositAmount);
 
-    if (amount < 50) {
-      setError('Minimum deposit is ₹50');
+    if (amount < 5) {
+      setError('Minimum deposit is ₹5');
       setLoading(false);
       return;
     }
@@ -113,7 +113,7 @@ export default function PaymentPage() {
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    Minimum: ₹50 • Maximum: ₹1,00,00,000
+                    Minimum: ₹5 • Maximum: ₹1,00,00,000
                   </p>
                 </div>
 

@@ -183,8 +183,8 @@ export default function ProfileSettings() {
   const handleDepositClick = async () => {
     const amount = parseFloat(depositAmount);
     
-    if (!amount || amount < 50) {
-      alert('Minimum deposit is ₹50');
+    if (!amount || amount < 5) {
+      alert('Minimum deposit is ₹5');
       return;
     }
     
@@ -313,8 +313,8 @@ export default function ProfileSettings() {
     
     const amount = parseFloat(withdrawAmount);
     
-    if (!amount || amount < 50) {
-      setWithdrawError('Minimum withdrawal is ₹50');
+    if (!amount || amount < 5) {
+      setWithdrawError('Minimum withdrawal is ₹5');
       return;
     }
 
@@ -732,13 +732,13 @@ export default function ProfileSettings() {
                           <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                           <Input
                             type="number"
-                            min="50"
+                            min="5"
                             max="10000000"
                             step="1"
                             value={depositAmount}
                             onChange={(e) => setDepositAmount(e.target.value)}
                             className="pl-10 bg-zinc-800 border-zinc-700 text-white"
-                            placeholder="Enter amount (min ₹50)"
+                            placeholder="Enter amount (min ₹5)"
                           />
                         </div>
                       </div>
@@ -835,13 +835,13 @@ export default function ProfileSettings() {
                           <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                           <Input
                             type="number"
-                            min="50"
+                            min="5"
                             max={availableBalance}
                             step="1"
                             value={withdrawAmount}
                             onChange={(e) => setWithdrawAmount(e.target.value)}
                             className="pl-10 bg-zinc-800 border-zinc-700 text-white"
-                            placeholder="Enter amount (min ₹50)"
+                            placeholder="Enter amount (min ₹5)"
                           />
                         </div>
                         <p className="text-xs text-gray-500">
@@ -868,7 +868,7 @@ export default function ProfileSettings() {
                         </select>
                       </div>
 
-                      {parseFloat(withdrawAmount || '0') >= 50 && (
+                      {parseFloat(withdrawAmount || '0') >= 5 && (
                         <div className="p-3 bg-zinc-800 rounded-lg space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-400">Amount</span>
