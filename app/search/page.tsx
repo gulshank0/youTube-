@@ -238,15 +238,15 @@ export default function SearchPage() {
                         Clear All
                       </button>
                     </div>
-                    {searchHistory.map((item, index) => (
+                    {searchHistory.map((item) => (
                       <button
-                        key={index}
+                        key={`${item.query}-${item.timestamp}`}
                         type="button"
                         onClick={() => searchFromHistory(item.query)}
                         className="w-full px-4 py-3 text-left hover:bg-zinc-800 transition-colors flex items-center justify-between group"
                       >
                         <div className="flex items-center flex-1 min-w-0">
-                          <Search className="w-4 h-4 mr-3 text-gray-500 flex-shrink-0" />
+                          <Search className="w-4 h-4 mr-3 text-gray-500 shrink-0" />
                           <span className="text-white truncate">{item.query}</span>
                         </div>
                         <button

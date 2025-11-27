@@ -2,19 +2,48 @@
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { TrendingUp, Users, IndianRupee, Clock, Play, Filter } from "lucide-react";
+import { TrendingUp, Users, IndianRupee, Play, Filter, X } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function MarketplacePage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [offerings, setOfferings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Get search parameters from URL (coming from search page)
+  const creatorFilter = searchParams.get('creator');
+  const channelIdFilter = searchParams.get('channelId');
 
   useEffect(() => {
     fetchOfferings();
   }, []);
+
+  // Filter offerings based on URL parameters
+  const filteredOfferings = useMemo(() => {
+    if (!channelIdFilter && !creatorFilter) {
+      return offerings;
+    }
+    
+    return offerings.filter((offering) => {
+      // Match by channel ID if available
+      if (channelIdFilter && offering.channel?.channelId === channelIdFilter) {
+        return true;
+      }
+      // Match by creator name (case-insensitive partial match)
+      if (creatorFilter && offering.channel?.channelName?.toLowerCase().includes(creatorFilter.toLowerCase())) {
+        return true;
+      }
+      return false;
+    });
+  }, [offerings, channelIdFilter, creatorFilter]);
+
+  const clearFilters = () => {
+    router.push('/marketplace');
+  };
 
   const fetchOfferings = async () => {
     setLoading(true);
@@ -85,6 +114,23 @@ export default function MarketplacePage() {
           </p>
         </div>
 
+        {/* Active Filter Indicator */}
+        {(creatorFilter || channelIdFilter) && (
+          <div className="flex items-center gap-2 mb-6 p-3 bg-red-900/20 border border-red-600/30 rounded-lg">
+            <span className="text-gray-300">Filtering by creator:</span>
+            <Badge className="bg-red-600 text-white">
+              {creatorFilter || channelIdFilter}
+            </Badge>
+            <button
+              onClick={clearFilters}
+              className="ml-auto flex items-center gap-1 text-gray-400 hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+              Clear filter
+            </button>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-8 p-4 bg-zinc-900 rounded-lg border border-zinc-800">
           <button className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-white transition-colors">
@@ -93,9 +139,9 @@ export default function MarketplacePage() {
           </button>
           <select className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-red-600">
             <option>Min Investment</option>
-            <option>$100+</option>
-            <option>$500+</option>
-            <option>$1,000+</option>
+            <option>₹1,000+</option>
+            <option>₹5,000+</option>
+            <option>₹10,000+</option>
           </select>
           <select className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-red-600">
             <option>Sort by</option>
@@ -107,7 +153,7 @@ export default function MarketplacePage() {
 
         {/* Offerings Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {offerings.map((offering: any) => (
+          {filteredOfferings.map((offering: any) => (
             <div key={offering.id} className="youtube-card group">
               {/* Thumbnail */}
               <div className="relative aspect-video bg-zinc-800 rounded-t-lg overflow-hidden">
@@ -183,14 +229,26 @@ export default function MarketplacePage() {
           ))}
         </div>
 
-        {offerings.length === 0 && (
+        {filteredOfferings.length === 0 && (
           <div className="text-center py-16 bg-zinc-900 rounded-lg border border-zinc-800">
             <TrendingUp className="w-16 h-16 mx-auto text-gray-600 mb-4" />
-            <h3 className="text-xl font-semibold mb-2 text-white">No offerings available yet</h3>
-            <p className="text-gray-400 mb-6">Be the first to list your channel or check back soon!</p>
-            <Link href="/creator/onboard">
-              <Button className="youtube-button">Become a Creator</Button>
-            </Link>
+            <h3 className="text-xl font-semibold mb-2 text-white">
+              {(creatorFilter || channelIdFilter) ? 'No offerings found for this creator' : 'No offerings available yet'}
+            </h3>
+            <p className="text-gray-400 mb-6">
+              {(creatorFilter || channelIdFilter) 
+                ? 'This creator has not listed any offerings yet. Check back later or explore other creators.'
+                : 'Be the first to list your channel or check back soon!'}
+            </p>
+            {(creatorFilter || channelIdFilter) ? (
+              <Button className="youtube-button" onClick={clearFilters}>
+                View All Offerings
+              </Button>
+            ) : (
+              <Link href="/creator/onboard">
+                <Button className="youtube-button">Become a Creator</Button>
+              </Link>
+            )}
           </div>
         )}
       </div>
