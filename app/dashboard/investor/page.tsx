@@ -2,18 +2,42 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, TrendingUp, Users, Clock, ArrowUpRight, Wallet, CreditCard } from 'lucide-react';
+import { IndianRupee, TrendingUp, Users, Clock, ArrowUpRight, Wallet, CreditCard, CheckCircle, X, Shield, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function InvestorDashboard() {
-  const { data: session } = useSession();
+  const { data: session } = useSession(); // For auth protection
+  const searchParams = useSearchParams();
   const [investments, setInvestments] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [wallet, setWallet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [paymentSuccessMessage, setPaymentSuccessMessage] = useState<string | null>(null);
+
+  // Check for payment success from URL query params
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    
+    if (paymentStatus === 'success') {
+      // Clear the URL parameter
+      const newUrl = globalThis.location.pathname;
+      globalThis.history.replaceState({}, '', newUrl);
+      
+      // Show success message
+      setPaymentSuccessMessage('Payment successful! Your wallet balance has been updated.');
+      
+      // Fetch latest wallet data
+      fetchWallet();
+      
+      // Clear message after 5 seconds
+      setTimeout(() => {
+        setPaymentSuccessMessage(null);
+      }, 5000);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchInvestments();
@@ -37,7 +61,11 @@ export default function InvestorDashboard() {
 
   const fetchWallet = async () => {
     try {
-      const res = await fetch('/api/wallet');
+      const res = await fetch('/api/wallet', {
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
       const data = await res.json();
       if (data.success) {
         setWallet(data.wallet);
@@ -65,6 +93,73 @@ export default function InvestorDashboard() {
   return (
     <div className="min-h-screen bg-zinc-950">
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        {/* KYC Verification Alert */}
+        {session?.user?.kycStatus !== 'VERIFIED' && (
+          <div className={`p-4 rounded-lg flex items-start gap-3 ${
+            session?.user?.kycStatus === 'PENDING' 
+              ? 'bg-yellow-500/10 border border-yellow-500/20'
+              : session?.user?.kycStatus === 'REJECTED'
+              ? 'bg-red-500/10 border border-red-500/20'
+              : 'bg-blue-500/10 border border-blue-500/20'
+          }`}>
+            {session?.user?.kycStatus === 'PENDING' ? (
+              <Clock className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+            ) : session?.user?.kycStatus === 'REJECTED' ? (
+              <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            ) : (
+              <Shield className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+            )}
+            <div className="flex-1">
+              <p className={`font-medium ${
+                session?.user?.kycStatus === 'PENDING' 
+                  ? 'text-yellow-400'
+                  : session?.user?.kycStatus === 'REJECTED'
+                  ? 'text-red-400'
+                  : 'text-blue-400'
+              }`}>
+                {session?.user?.kycStatus === 'PENDING' 
+                  ? 'KYC Verification In Progress'
+                  : session?.user?.kycStatus === 'REJECTED'
+                  ? 'KYC Verification Rejected'
+                  : 'Complete KYC Verification'}
+              </p>
+              <p className="text-sm text-gray-400 mt-1">
+                {session?.user?.kycStatus === 'PENDING' 
+                  ? 'Your documents are being reviewed. This usually takes 24-48 hours.'
+                  : session?.user?.kycStatus === 'REJECTED'
+                  ? 'Your verification was rejected. Please resubmit with correct information.'
+                  : 'Complete your KYC verification to withdraw funds from your wallet.'}
+              </p>
+            </div>
+            {session?.user?.kycStatus !== 'PENDING' && (
+              <Link href="/profile?tab=kyc">
+                <Button size="sm" className={`${
+                  session?.user?.kycStatus === 'REJECTED'
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                } text-white`}>
+                  <Shield className="w-4 h-4 mr-2" />
+                  {session?.user?.kycStatus === 'REJECTED' ? 'Resubmit KYC' : 'Complete KYC'}
+                </Button>
+              </Link>
+            )}
+          </div>
+        )}
+
+        {/* Payment Success Message */}
+        {paymentSuccessMessage && (
+          <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+            <p className="text-green-400 font-medium">{paymentSuccessMessage}</p>
+            <button 
+              onClick={() => setPaymentSuccessMessage(null)}
+              className="ml-auto text-gray-400 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-white">Investor Dashboard</h1>
@@ -89,7 +184,7 @@ export default function InvestorDashboard() {
                 <div>
                   <h3 className="text-lg font-medium text-gray-400">Portfolio Wallet</h3>
                   <p className="text-3xl font-bold text-white mt-1">
-                    ${wallet?.balance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                    ₹{wallet?.balance?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                   </p>
                 </div>
               </div>
@@ -105,19 +200,19 @@ export default function InvestorDashboard() {
               <div>
                 <p className="text-sm text-gray-400">Total Deposited</p>
                 <p className="text-lg font-semibold text-white mt-1">
-                  ${wallet?.totalDeposited?.toLocaleString() || '0'}
+                  ₹{wallet?.totalDeposited?.toLocaleString('en-IN') || '0'}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-gray-400">Total Invested</p>
                 <p className="text-lg font-semibold text-white mt-1">
-                  ${wallet?.totalInvested?.toLocaleString() || '0'}
+                  ₹{wallet?.totalInvested?.toLocaleString('en-IN') || '0'}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-gray-400">Available Balance</p>
                 <p className="text-lg font-semibold text-green-400 mt-1">
-                  ${wallet?.balance?.toLocaleString() || '0'}
+                  ₹{wallet?.balance?.toLocaleString('en-IN') || '0'}
                 </p>
               </div>
             </div>
@@ -130,10 +225,10 @@ export default function InvestorDashboard() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-medium text-gray-400">Total Invested</h3>
               <div className="w-10 h-10 bg-red-600/10 rounded-full flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-red-600" />
+                <IndianRupee className="h-5 w-5 text-red-600" />
               </div>
             </div>
-            <div className="text-2xl font-bold text-white">${summary?.totalInvested?.toLocaleString() || 0}</div>
+            <div className="text-2xl font-bold text-white">₹{summary?.totalInvested?.toLocaleString('en-IN') || 0}</div>
           </div>
 
           <div className="youtube-card p-6">
@@ -144,7 +239,7 @@ export default function InvestorDashboard() {
               </div>
             </div>
             <div className="text-2xl font-bold text-green-400">
-              ${summary?.totalReturns?.toLocaleString() || 0}
+              ₹{summary?.totalReturns?.toLocaleString('en-IN') || 0}
             </div>
             <p className="text-xs text-gray-500 mt-1">
               {summary?.totalInvested > 0
@@ -173,7 +268,7 @@ export default function InvestorDashboard() {
             <div className="text-2xl font-bold text-white">
               {investments.length > 0
                 ? (
-                    investments.reduce((sum, inv) => sum + parseFloat(calculateROI(inv)), 0) /
+                    investments.reduce((sum, inv) => sum + Number.parseFloat(calculateROI(inv)), 0) /
                     investments.length
                   ).toFixed(2)
                 : 0}
@@ -262,16 +357,15 @@ export default function InvestorDashboard() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Invested</p>
-                        <p className="font-semibold text-white">${investment.totalAmount.toLocaleString()}</p>
+                        <p className="font-semibold text-white">₹{investment.totalAmount.toLocaleString('en-IN')}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Returns</p>
                         <p className="font-semibold text-green-400">
-                          $
-                          {investment.payouts
+                          ₹{investment.payouts
                             .filter((p: any) => p.status === 'COMPLETED')
                             .reduce((sum: number, p: any) => sum + p.amount, 0)
-                            .toLocaleString()}
+                            .toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
                       <div>
@@ -315,7 +409,7 @@ export default function InvestorDashboard() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-green-400">${payout.amount.toFixed(2)}</p>
+                        <p className="font-semibold text-green-400">₹{payout.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
                         <Badge 
                           variant={payout.status === 'COMPLETED' ? 'default' : 'secondary'}
                           className={payout.status === 'COMPLETED' ? 'bg-red-600 text-white' : 'bg-zinc-600 text-gray-300'}

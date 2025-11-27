@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Video, AlertCircle, ExternalLink } from 'lucide-react';
+import { Video, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SignIn() {
@@ -84,21 +84,21 @@ export default function SignIn() {
       case 'SessionRequired':
         return 'Please sign in to access this page.';
       case 'AccessDenied':
-        return 'Access denied. The app is currently in testing mode.';
+        return 'Access denied. Please try again or contact support.';
       default:
         return 'An error occurred during sign in. Please try again.';
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-950 to-zinc-900 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-zinc-950 to-zinc-900 px-4">
       <Card className="w-full max-w-md p-8 shadow-xl bg-zinc-900 backdrop-blur-sm">
         <div className="text-center mb-8">
           <Link href="/" className="flex items-center justify-center space-x-2 mb-4">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-red-500 to-red-700 shadow-lg">
+            <div className="p-2 rounded-lg bg-linear-to-br from-red-500 to-red-700 shadow-lg">
               <Video className="h-8 w-8 text-gray-300" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold bg-linear-to-r from-red-600 to-red-800 bg-clip-text text-transparent">
               CreatorTube
             </span>
           </Link>
@@ -112,30 +112,9 @@ export default function SignIn() {
             <div className="flex items-start space-x-2">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <div className="text-sm text-red-700 mb-2">
+                <div className="text-sm text-red-700">
                   {getErrorMessage(error)}
                 </div>
-                
-                {error === 'AccessDenied' && (
-                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <p className="text-sm text-yellow-800 font-medium mb-2">
-                      🔒 App in Testing Mode
-                    </p>
-                    <p className="text-xs text-yellow-700 mb-3">
-                      CreatorTube is currently undergoing Google's verification process. 
-                      Only approved test users can sign in at this time.
-                    </p>
-                    <div className="space-y-2 text-xs text-yellow-700">
-                      <p><strong>If you're a tester:</strong> Make sure your email is added to the test user list in Google Cloud Console.</p>
-                      <p><strong>If you're the developer:</strong> Complete the OAuth consent screen verification process.</p>
-                    </div>
-                    <div className="mt-3 pt-2 border-t border-yellow-200">
-                      <p className="text-xs text-yellow-600">
-                        Contact: <span className="font-mono">gulshan63072@gmail.com</span> for access
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -192,25 +171,6 @@ export default function SignIn() {
             </Link>
           </p>
         </div>
-
-        {/* Development Info - Only show in development */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs text-blue-700 font-medium mb-1">Development Mode</p>
-            <p className="text-xs text-blue-600">
-              To resolve Google verification issues, visit the{' '}
-              <a 
-                href="https://console.cloud.google.com/apis/credentials/consent" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="underline hover:text-blue-800"
-              >
-                OAuth consent screen <ExternalLink className="w-3 h-3 inline" />
-              </a>
-              {' '}and complete the verification process.
-            </p>
-          </div>
-        )}
       </Card>
     </div>
   );

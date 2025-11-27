@@ -149,36 +149,130 @@ model Payout {
 }
 
 model Transaction {
-  id          String            @id @default(cuid())
-  userId      String
-  type        TransactionType
-  amount      Float
-  status      TransactionStatus @default(PENDING)
-  stripeId    String?
-  metadata    Json?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id              String            @id @default(cuid())
+  userId          String
+  type            TransactionType
+  amount          Float
+  fee             Float             @default(0)
+  netAmount       Float?            // amount after fees
+  status          TransactionStatus @default(PENDING)
+  stripeId        String?
+  referenceType   String?           // "offering", "investment", "withdrawal", etc.
+  referenceId     String?           // ID of the related entity
+  description     String?
+  metadata        Json?
+  ipAddress       String?           // For compliance/audit
+  userAgent       String?           // For compliance/audit
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  completedAt     DateTime?
   
   // Relations
-  user        User              @relation(fields: [userId], references: [id])
+  user            User              @relation(fields: [userId], references: [id])
+  ledgerEntries   WalletLedger[]
   
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
   @@map("transactions")
 }
 
 model Wallet {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  balance       Float    @default(0)
-  totalDeposited Float   @default(0)
-  totalInvested Float    @default(0)
-  totalWithdrawn Float   @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  balance         Float    @default(0)
+  pendingBalance  Float    @default(0)  // Funds in processing
+  lockedBalance   Float    @default(0)  // Funds locked for pending investments
+  totalDeposited  Float    @default(0)
+  totalInvested   Float    @default(0)
+  totalWithdrawn  Float    @default(0)
+  totalEarnings   Float    @default(0)  // Revenue from investments
+  currency        String   @default("USD")
+  isActive        Boolean  @default(true)
+  lastActivityAt  DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
   
   // Relations
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankAccounts    BankAccount[]
+  walletLedger    WalletLedger[]
   
   @@map("wallets")
+}
+
+model BankAccount {
+  id                  String            @id @default(cuid())
+  walletId            String
+  userId              String
+  accountHolderName   String
+  accountType         BankAccountType   @default(SAVING)
+  bankName            String
+  routingNumber       String            // Encrypted in production
+  accountNumberLast4  String            // Only store last 4 digits
+  accountNumberHash   String            // Hashed full account number for verification
+  stripeExternalId    String?           // Stripe connected account external ID
+  isVerified          Boolean           @default(false)
+  isDefault           Boolean           @default(false)
+  status              BankAccountStatus @default(PENDING)
+  verifiedAt          DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  
+  // Relations
+  wallet              Wallet            @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  withdrawals         Withdrawal[]
+  
+  @@index([userId])
+  @@index([walletId])
+  @@map("bank_accounts")
+}
+
+model Withdrawal {
+  id              String           @id @default(cuid())
+  userId          String
+  bankAccountId   String
+  amount          Float
+  fee             Float            @default(0)
+  netAmount       Float            // amount - fee
+  status          WithdrawalStatus @default(PENDING)
+  stripePayoutId  String?
+  failureReason   String?
+  requestedAt     DateTime         @default(now())
+  processedAt     DateTime?
+  completedAt     DateTime?
+  
+  // Relations
+  bankAccount     BankAccount      @relation(fields: [bankAccountId], references: [id])
+  
+  @@index([userId])
+  @@index([status])
+  @@map("withdrawals")
+}
+
+model WalletLedger {
+  id              String          @id @default(cuid())
+  walletId        String
+  transactionId   String?
+  entryType       LedgerEntryType
+  debit           Float           @default(0)
+  credit          Float           @default(0)
+  balance         Float           // Running balance after this entry
+  description     String
+  referenceType   String?         // "investment", "withdrawal", "deposit", "payout"
+  referenceId     String?         // ID of the related entity
+  metadata        Json?
+  createdAt       DateTime        @default(now())
+  
+  // Relations
+  wallet          Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  transaction     Transaction?    @relation(fields: [transactionId], references: [id])
+  
+  @@index([walletId])
+  @@index([createdAt])
+  @@index([entryType])
+  @@map("wallet_ledger")
 }
 
 // Enums
@@ -237,4 +331,39 @@ enum TransactionType {
   FEE
   DEPOSIT
   WITHDRAWAL
+  EARNING
+  TRANSFER
+}
+
+enum BankAccountType {
+  SAVING
+  CURRENT
+}
+
+enum BankAccountStatus {
+  PENDING
+  VERIFIED
+  FAILED
+  SUSPENDED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum LedgerEntryType {
+  DEPOSIT
+  WITHDRAWAL
+  INVESTMENT
+  INVESTMENT_RETURN
+  PAYOUT_RECEIVED
+  FEE_CHARGED
+  REFUND
+  ADJUSTMENT
+  LOCK
+  UNLOCK
 }
