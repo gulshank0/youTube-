@@ -207,7 +207,7 @@ model BankAccount {
   walletId            String
   userId              String
   accountHolderName   String
-  accountType         BankAccountType   @default(CHECKING)
+  accountType         BankAccountType   @default(SAVING)
   bankName            String
   routingNumber       String            // Encrypted in production
   accountNumberLast4  String            // Only store last 4 digits
@@ -336,8 +336,8 @@ enum TransactionType {
 }
 
 enum BankAccountType {
-  CHECKING
-  SAVINGS
+  SAVING
+  CURRENT
 }
 
 enum BankAccountStatus {

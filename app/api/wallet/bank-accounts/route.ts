@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
           walletId: wallet!.id,
           userId: user.id,
           accountHolderName: accountHolderName.trim(),
-          accountType: accountType || 'CHECKING',
+          accountType: accountType || 'SAVING',
           bankName: bankName.trim(),
           routingNumber,
           accountNumberLast4: accountNumber.slice(-4),

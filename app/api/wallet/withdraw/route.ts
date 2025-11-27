@@ -6,8 +6,7 @@ import { headers } from 'next/headers';
 
 // Withdrawal processing fee
 const WITHDRAWAL_FEE_PERCENT = 1.5;
-const MIN_WITHDRAWAL = 50;
-const MAX_WITHDRAWAL = 5000000;
+const MIN_WITHDRAWAL = 60; // ₹60 minimum withdrawal
 
 // POST - Request a withdrawal
 export async function POST(req: NextRequest) {
@@ -57,13 +56,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ 
         error: `Minimum withdrawal is ₹${MIN_WITHDRAWAL.toLocaleString('en-IN')}`,
         code: 'MIN_AMOUNT'
-      }, { status: 400 });
-    }
-
-    if (amount > MAX_WITHDRAWAL) {
-      return NextResponse.json({ 
-        error: `Maximum withdrawal is ₹${MAX_WITHDRAWAL.toLocaleString('en-IN')}`,
-        code: 'MAX_AMOUNT'
       }, { status: 400 });
     }
 

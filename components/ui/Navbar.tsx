@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { Menu, Video, Bell, User, Search } from 'lucide-react';
+import { Menu, Video, Bell, User, Search, Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function Navbar() {
@@ -69,6 +69,15 @@ export default function Navbar() {
               className="px-4 py-2 text-lg font-medium text-gray-300 hover:bg-zinc-800/50 hover:text-white rounded-lg transition-colors"
             >
               Portfolio
+            </Link>
+          )}
+          {session?.user?.role === 'ADMIN' && (
+            <Link 
+              href="/admin" 
+              className="px-4 py-2 text-lg font-medium text-gray-300 hover:bg-zinc-800/50 hover:text-white rounded-lg transition-colors flex items-center space-x-2"
+            >
+              <Shield className="w-4 h-4" />
+              <span>Admin</span>
             </Link>
           )}
         </nav>
@@ -178,6 +187,16 @@ export default function Navbar() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Portfolio
+              </Link>
+            )}
+            {session?.user?.role === 'ADMIN' && (
+              <Link
+                href="/admin"
+                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-zinc-800/50 hover:text-white rounded-lg transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Shield className="w-4 h-4" />
+                <span>Admin Dashboard</span>
               </Link>
             )}
           </nav>

@@ -91,10 +91,20 @@ export class KYCService {
 
   async approveKYC(userId: string, adminId: string) {
     try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { kycData: true },
+      });
+
       await prisma.user.update({
         where: { id: userId },
         data: {
           kycStatus: 'VERIFIED',
+          kycData: {
+            ...(user?.kycData as any),
+            verifiedAt: new Date().toISOString(),
+            verifiedBy: adminId,
+          },
           updatedAt: new Date(),
         },
       });
@@ -109,14 +119,20 @@ export class KYCService {
 
   async rejectKYC(userId: string, reason: string, adminId: string) {
     try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { kycData: true },
+      });
+
       await prisma.user.update({
         where: { id: userId },
         data: {
           kycStatus: 'REJECTED',
           kycData: {
-            ...(await prisma.user.findUnique({ where: { id: userId } }))?.kycData,
+            ...(user?.kycData as any),
             rejectionReason: reason,
             rejectedAt: new Date().toISOString(),
+            rejectedBy: adminId,
           },
         },
       });
