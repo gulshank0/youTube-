@@ -36,7 +36,7 @@ export default function MarketDepth({ data, currentPrice }: MarketDepthProps) {
   const sentiment = bidAskRatio > 0.55 ? 'bullish' : bidAskRatio < 0.45 ? 'bearish' : 'neutral';
 
   return (
-    <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden">
+    <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden ">
       {/* Header */}
       <div className="p-2 sm:p-3 border-b border-zinc-800">
         <div className="flex items-center justify-between">

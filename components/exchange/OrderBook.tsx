@@ -109,7 +109,7 @@ export default function OrderBook({
               : 'text-gray-400 hover:text-white hover:bg-zinc-800/30'
           }`}
         >
-          Order Book
+          Book
         </button>
         <button
           onClick={() => setActiveTab('trades')}

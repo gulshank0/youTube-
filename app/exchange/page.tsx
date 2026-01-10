@@ -155,7 +155,7 @@ export default function ExchangePage() {
   // Fetch recent trades
   const fetchRecentTrades = useCallback(async (offeringId: string) => {
     try {
-      const response = await fetch(`/api/trading/trades?offeringId=${offeringId}`);
+      const response = await fetch(`/api/trading/trades?offeringId=${offeringId}&market=true`);
       const data = await response.json();
       if (data.success) {
         setRecentTrades(data.trades);
@@ -333,7 +333,11 @@ export default function ExchangePage() {
       price: trade.pricePerShare,
       shares: trade.shares,
       total: trade.totalAmount,
-      side: trade.buyerId === session?.user?.id ? 'buy' : 'sell' as 'buy' | 'sell',
+      // For market view, all trades are buys (taker buying from maker's sell order)
+      // For user's own trades, show their perspective
+      side: session?.user?.id 
+        ? (trade.buyerId === session.user.id ? 'buy' : 'sell') as 'buy' | 'sell'
+        : 'buy' as 'buy' | 'sell',
       timestamp: trade.createdAt,
     }));
   }, [recentTrades, session?.user?.id]);

@@ -116,7 +116,7 @@ export default function TradingPanel({
           onClick={() => setActiveTab('buy')}
           className={`py-2 sm:py-3 text-sm sm:text-base font-semibold transition-colors ${
             activeTab === 'buy'
-              ? 'bg-red-600 text-white'
+              ? 'bg-green-600 text-white'
               : 'bg-zinc-800 text-gray-400 hover:text-white'
           }`}
         >
@@ -291,19 +291,15 @@ export default function TradingPanel({
         <Button
           onClick={handleSubmit}
           disabled={!isValidOrder() || processing}
-          className={`w-full py-2 sm:py-4 text-sm sm:text-sm font-semibold transition-colors ${
-            activeTab === 'buy'
-              ? 'bg-red-600 hover:bg-red-700 disabled:bg-red-600/50'
-              : 'bg-red-600 hover:bg-red-700 disabled:bg-red-600/50'
-          } text-white`}
+          className="w-full py-2 sm:py-4 text-sm sm:text-sm font-semibold transition-colors bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white overflow-hidden text-ellipsis whitespace-nowrap"
         >
           {processing ? (
             <span className="flex items-center justify-center gap-2">
-              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Processing...
+              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin flex-shrink-0" />
+              <span className="truncate">Processing...</span>
             </span>
           ) : (
-            `${activeTab === 'buy' ? 'Buy' : 'Sell'} ${symbol}`
+            <span className="truncate">{activeTab === 'buy' ? 'Buy' : 'Sell'} {symbol}</span>
           )}
         </Button>
 
