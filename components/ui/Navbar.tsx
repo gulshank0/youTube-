@@ -62,14 +62,7 @@ export default function Navbar() {
             <TrendingUp className="w-4 h-4" />
             Exchange
           </Link>
-          {session?.user?.role === 'CREATOR' && (
-            <Link 
-              href="/dashboard/creator" 
-              className="px-4 py-2 text-sm font-medium text-gray-300 hover:bg-zinc-800/50 hover:text-white rounded-lg transition-colors"
-            >
-              Creator Studio
-            </Link>
-          )}
+
          
           {session?.user?.role === 'INVESTOR' && (
             <Link 
@@ -135,6 +128,14 @@ export default function Navbar() {
                       >
                         Dashboard
                       </button>
+                      {session.user?.role === 'CREATOR' && (
+                        <button
+                          onClick={() => router.push('/dashboard/creator')}
+                          className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-zinc-800/50 hover:text-white transition-colors"
+                        >
+                          Creator Studio
+                        </button>
+                      )}
                       <button
                         onClick={() => signOut()}
                         className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-zinc-800/50 hover:text-white rounded-b-lg transition-colors"
@@ -193,15 +194,7 @@ export default function Navbar() {
               <TrendingUp className="w-4 h-4" />
               Exchange
             </Link>
-            {session?.user?.role === 'CREATOR' && (
-              <Link
-                href="/dashboard/creator"
-                className="block px-3 py-2 text-sm font-medium text-gray-300 hover:bg-zinc-800/50 hover:text-white rounded-lg transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Creator Studio
-              </Link>
-            )}
+
             {session?.user?.role === 'INVESTOR' && (
               <Link
                 href="/dashboard/investor"
