@@ -2,9 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Users, IndianRupee, Play, Filter, X } from "lucide-react";
+import { Users, IndianRupee, Play, Filter, X, Search } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 export default function MarketplacePage() {
@@ -14,6 +14,9 @@ export default function MarketplacePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  
   // Get search parameters from URL (coming from search page)
   const creatorFilter = searchParams.get('creator');
   const channelIdFilter = searchParams.get('channelId');
@@ -22,27 +25,62 @@ export default function MarketplacePage() {
     fetchOfferings();
   }, []);
 
-  // Filter offerings based on URL parameters
+  // Initialize search from URL params
+  useEffect(() => {
+    if (creatorFilter) {
+      setSearchQuery(creatorFilter);
+    }
+  }, [creatorFilter]);
+
+  // Filter offerings based on search query and URL parameters
   const filteredOfferings = useMemo(() => {
-    if (!channelIdFilter && !creatorFilter) {
-      return offerings;
+    let filtered = offerings;
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter((offering) => {
+        const channelName = offering.channel?.channelName?.toLowerCase() || '';
+        const title = offering.title?.toLowerCase() || '';
+        const description = offering.description?.toLowerCase() || '';
+        return channelName.includes(query) || title.includes(query) || description.includes(query);
+      });
     }
     
-    return offerings.filter((offering) => {
-      // Match by channel ID if available
-      if (channelIdFilter && offering.channel?.channelId === channelIdFilter) {
-        return true;
-      }
-      // Match by creator name (case-insensitive partial match)
-      if (creatorFilter && offering.channel?.channelName?.toLowerCase().includes(creatorFilter.toLowerCase())) {
-        return true;
-      }
-      return false;
-    });
-  }, [offerings, channelIdFilter, creatorFilter]);
+    // Also apply URL filters if present
+    if (channelIdFilter) {
+      filtered = filtered.filter((offering) => 
+        offering.channel?.channelId === channelIdFilter
+      );
+    }
+    
+    return filtered;
+  }, [offerings, searchQuery, channelIdFilter]);
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
+    setSearchQuery('');
     router.push('/marketplace');
+  }, [router]);
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  }, []);
+
+  const handleSearchClear = useCallback(() => {
+    setSearchQuery('');
+  }, []);
+
+  // Helper function to get empty state text
+  const getEmptyStateTitle = () => {
+    if (searchQuery) return `No results found for "${searchQuery}"`;
+    if (creatorFilter || channelIdFilter) return 'No offerings found for this creator';
+    return 'No offerings available yet';
+  };
+
+  const getEmptyStateDescription = () => {
+    if (searchQuery) return 'Try a different search term or browse all offerings.';
+    if (creatorFilter || channelIdFilter) return 'This creator has not listed any offerings yet. Check back later or explore other creators.';
+    return 'Be the first to list your channel or check back soon!';
   };
 
   const fetchOfferings = async () => {
@@ -114,8 +152,35 @@ export default function MarketplacePage() {
           </p>
         </div>
 
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative max-w-2xl">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              placeholder="Search channels, offerings, or creators..."
+              className="w-full pl-12 pr-10 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={handleSearchClear}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p className="text-sm text-gray-400 mt-2">
+              Found {filteredOfferings.length} {filteredOfferings.length === 1 ? 'result' : 'results'} for &quot;{searchQuery}&quot;
+            </p>
+          )}
+        </div>
+
         {/* Active Filter Indicator */}
-        {(creatorFilter || channelIdFilter) && (
+        {(creatorFilter || channelIdFilter) && !searchQuery && (
           <div className="flex items-center gap-2 mb-6 p-3 bg-red-900/20 border border-red-600/30 rounded-lg">
             <span className="text-gray-300">Filtering by creator:</span>
             <Badge className="bg-red-600 text-white">
@@ -239,16 +304,14 @@ export default function MarketplacePage() {
 
         {filteredOfferings.length === 0 && (
           <div className="text-center py-16 bg-zinc-900 rounded-lg border border-zinc-800">
-            <TrendingUp className="w-16 h-16 mx-auto text-gray-600 mb-4" />
+            <Search className="w-16 h-16 mx-auto text-gray-600 mb-4" />
             <h3 className="text-xl font-semibold mb-2 text-white">
-              {(creatorFilter || channelIdFilter) ? 'No offerings found for this creator' : 'No offerings available yet'}
+              {getEmptyStateTitle()}
             </h3>
             <p className="text-gray-400 mb-6">
-              {(creatorFilter || channelIdFilter) 
-                ? 'This creator has not listed any offerings yet. Check back later or explore other creators.'
-                : 'Be the first to list your channel or check back soon!'}
+              {getEmptyStateDescription()}
             </p>
-            {(creatorFilter || channelIdFilter) ? (
+            {(searchQuery || creatorFilter || channelIdFilter) ? (
               <Button className="youtube-button" onClick={clearFilters}>
                 View All Offerings
               </Button>
