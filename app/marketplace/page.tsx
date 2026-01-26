@@ -73,14 +73,14 @@ export default function MarketplacePage() {
   // Helper function to get empty state text
   const getEmptyStateTitle = () => {
     if (searchQuery) return `No results found for "${searchQuery}"`;
-    if (creatorFilter || channelIdFilter) return 'No offerings found for this creator';
-    return 'No offerings available yet';
+    if (creatorFilter || channelIdFilter) return 'No content found for this creator';
+    return 'No creators or offerings available yet';
   };
 
   const getEmptyStateDescription = () => {
-    if (searchQuery) return 'Try a different search term or browse all offerings.';
-    if (creatorFilter || channelIdFilter) return 'This creator has not listed any offerings yet. Check back later or explore other creators.';
-    return 'Be the first to list your channel or check back soon!';
+    if (searchQuery) return 'Try a different search term or browse all creators and offerings.';
+    if (creatorFilter || channelIdFilter) return 'This creator has not listed any content yet. Check back later or explore other creators.';
+    return 'Be the first to join as a creator or check back soon!';
   };
 
   const fetchOfferings = async () => {
@@ -148,7 +148,7 @@ export default function MarketplacePage() {
             Investment Marketplace
           </h1>
           <p className="text-gray-400 text-lg">
-            Discover vetted YouTube creators seeking investment for revenue sharing
+            Discover vetted YouTube creators and investment opportunities
           </p>
         </div>
 
@@ -160,7 +160,7 @@ export default function MarketplacePage() {
               type="text"
               value={searchQuery}
               onChange={handleSearchChange}
-              placeholder="Search channels, offerings, or creators..."
+              placeholder="Search creators, channels, or investment opportunities..."
               className="w-full pl-12 pr-10 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-colors"
             />
             {searchQuery && (
@@ -218,85 +218,138 @@ export default function MarketplacePage() {
 
         {/* Offerings Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredOfferings.map((offering: any) => (
-            <div key={offering.id} className="youtube-card group">
+          {filteredOfferings.map((item: any) => (
+            <div key={item.id} className="youtube-card group">
               {/* Thumbnail */}
               <div className="relative aspect-video bg-zinc-800 rounded-t-lg overflow-hidden">
                 <div className="absolute inset-0 bg-linear-to-br from-red-600/20 to-zinc-800 flex items-center justify-center">
                   <Play className="w-12 h-12 text-white/80" />
                 </div>
                 <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-                  {offering.duration}mo
+                  {item.type === 'offering' ? `${item.duration}mo` : 'New'}
                 </div>
+                {item.isComingSoon && (
+                  <div className="absolute top-2 left-2 bg-yellow-600 text-black text-xs px-2 py-1 rounded font-medium">
+                    Coming Soon
+                  </div>
+                )}
               </div>
 
               {/* Content */}
               <div className="p-4 space-y-3">
                 <div className="flex items-start gap-3">
-                  {offering.channel.analytics?.profileImage ? (
+                  {item.channel.analytics?.profileImage ? (
                     <img 
-                      src={offering.channel.analytics.profileImage} 
-                      alt={offering.channel.channelName}
+                      src={item.channel.analytics.profileImage} 
+                      alt={item.channel.channelName}
                       className="w-10 h-10 rounded-full object-cover shrink-0"
                     />
                   ) : (
                     <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center shrink-0">
                       <span className="text-white font-bold text-sm">
-                        {offering.channel.channelName[0]?.toUpperCase()}
+                        {item.channel.channelName[0]?.toUpperCase()}
                       </span>
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-white line-clamp-2 group-hover:text-red-400 transition-colors">
-                      {offering.title}
+                      {item.title}
                     </h3>
                     <p className="text-gray-400 text-sm mt-1">
-                      {offering.channel.channelName}
+                      {item.channel.channelName}
                     </p>
                   </div>
                 </div>
 
                 <p className="text-gray-400 text-sm line-clamp-2">
-                  {offering.description}
+                  {item.description}
                 </p>
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-1">
-                    <IndianRupee className="w-4 h-4 text-green-400" />
-                    <span className="text-white">₹{offering.pricePerShare}/share</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4 text-blue-400" />
-                    <span className="text-gray-400">{offering.investorCount} investors</span>
-                  </div>
+                  {item.type === 'offering' ? (
+                    <>
+                      <div className="flex items-center gap-1">
+                        <IndianRupee className="w-4 h-4 text-green-400" />
+                        <span className="text-white">₹{item.pricePerShare}/share</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Users className="w-4 h-4 text-blue-400" />
+                        <span className="text-gray-400">{item.investorCount} investors</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-1">
+                        <Users className="w-4 h-4 text-blue-400" />
+                        <span className="text-white">{item.channel.analytics?.subscriberCount?.toLocaleString() || 'N/A'} subs</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Play className="w-4 h-4 text-green-400" />
+                        <span className="text-gray-400">{item.channel.analytics?.videoCount?.toLocaleString() || 'N/A'} videos</span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
-                {/* Progress */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Funding Progress</span>
-                    <span className="text-white">{offering.fundingProgress}%</span>
+                {/* Progress or Channel Info */}
+                {item.type === 'offering' ? (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Funding Progress</span>
+                      <span className="text-white">{item.fundingProgress}%</span>
+                    </div>
+                    <div className="w-full bg-zinc-700 rounded-full h-1.5">
+                      <div 
+                        className="bg-red-600 h-1.5 rounded-full transition-all duration-300" 
+                        style={{ width: `${item.fundingProgress}%` }}
+                      ></div>
+                    </div>
                   </div>
-                  <div className="w-full bg-zinc-700 rounded-full h-1.5">
-                    <div 
-                      className="bg-red-600 h-1.5 rounded-full transition-all duration-300" 
-                      style={{ width: `${offering.fundingProgress}%` }}
-                    ></div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Total Views</span>
+                      <span className="text-white">{item.channel.analytics?.viewCount?.toLocaleString() || 'N/A'}</span>
+                    </div>
+                    <div className="text-xs text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded border border-yellow-400/20">
+                      Investment opportunity coming soon!
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="flex items-center justify-between pt-2">
-                  <Badge className="bg-red-600/20 text-red-400 border-red-600/30">
-                    {offering.sharePercentage}% Revenue Share
-                  </Badge>
+                  {item.type === 'offering' ? (
+                    <Badge className="bg-red-600/20 text-red-400 border-red-600/30">
+                      {item.sharePercentage}% Revenue Share
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-blue-600/20 text-blue-400 border-blue-600/30">
+                      New Creator
+                    </Badge>
+                  )}
                 </div>
 
-                <Link href={`/marketplace/${offering.id}`} className="block">
-                  <Button className="youtube-button w-full">
-                    View Details
-                  </Button>
-                </Link>
+                {item.type === 'offering' ? (
+                  <Link href={`/marketplace/${item.id}`} className="block">
+                    <Button className="youtube-button w-full">
+                      View Details
+                    </Button>
+                  </Link>
+                ) : (
+                  <div className="space-y-2">
+                    <Link href={`/channel/${item.id}`} className="block">
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                        View Channel
+                      </Button>
+                    </Link>
+                    <Link href={item.channel.channelUrl} target="_blank" className="block">
+                      <Button variant="outline" className="w-full text-xs border-zinc-600 text-gray-300 hover:bg-zinc-800">
+                        Visit on YouTube
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -313,7 +366,7 @@ export default function MarketplacePage() {
             </p>
             {(searchQuery || creatorFilter || channelIdFilter) ? (
               <Button className="youtube-button" onClick={clearFilters}>
-                View All Offerings
+                View All Creators & Offerings
               </Button>
             ) : (
               <Link href="/creator/onboard">

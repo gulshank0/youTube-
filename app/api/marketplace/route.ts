@@ -7,14 +7,14 @@ export async function GET(request: NextRequest) {
     const minInvestment = searchParams.get('minInvestment');
     const sortBy = searchParams.get('sortBy') || 'newest';
 
-    // Build where clause
-    const where: any = {
+    // Build where clause for offerings
+    const offeringWhere: any = {
       status: 'ACTIVE',
       availableShares: { gt: 0 },
     };
 
     if (minInvestment) {
-      where.minInvestment = { gte: Number.parseFloat(minInvestment) };
+      offeringWhere.minInvestment = { gte: Number.parseFloat(minInvestment) };
     }
 
     // Determine sort order
@@ -29,13 +29,15 @@ export async function GET(request: NextRequest) {
 
     // Fetch active offerings with channel data
     const offerings = await prisma.offering.findMany({
-      where,
+      where: offeringWhere,
       include: {
         channel: {
           select: {
+            id: true,
             channelName: true,
             channelUrl: true,
             analytics: true,
+            revenueData: true,
           },
         },
         investments: {
@@ -49,6 +51,28 @@ export async function GET(request: NextRequest) {
       orderBy,
     });
 
+    // Fetch verified channels without active offerings (newly onboarded creators)
+    const channelsWithoutOfferings = await prisma.channel.findMany({
+      where: {
+        status: 'VERIFIED',
+        offerings: {
+          none: {
+            status: 'ACTIVE'
+          }
+        }
+      },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
     // Calculate funding progress and investor count
     const enrichedOfferings = offerings.map((offering) => {
       const soldShares = offering.totalShares - offering.availableShares;
@@ -57,6 +81,7 @@ export async function GET(request: NextRequest) {
 
       return {
         id: offering.id,
+        type: 'offering',
         title: offering.title,
         description: offering.description,
         sharePercentage: offering.sharePercentage,
@@ -73,10 +98,47 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Transform channels without offerings into marketplace items
+    const channelItems = channelsWithoutOfferings.map((channel) => {
+      const analytics = channel.analytics as any;
+      const revenueData = channel.revenueData as any;
+      
+      return {
+        id: channel.id,
+        type: 'channel',
+        title: `Invest in ${channel.channelName}`,
+        description: `New creator channel with ${analytics?.subscriberCount?.toLocaleString() || 'N/A'} subscribers. Coming soon to marketplace!`,
+        sharePercentage: null,
+        totalShares: null,
+        availableShares: null,
+        pricePerShare: null,
+        minInvestment: null,
+        maxInvestment: null,
+        duration: null,
+        fundingProgress: 0,
+        investorCount: 0,
+        isComingSoon: true,
+        channel: {
+          id: channel.id,
+          channelName: channel.channelName,
+          channelUrl: channel.channelUrl,
+          analytics: channel.analytics,
+          revenueData: channel.revenueData,
+        },
+        owner: channel.owner,
+        createdAt: channel.createdAt,
+      };
+    });
+
+    // Combine offerings and channels, sort by creation date
+    const allItems = [...enrichedOfferings, ...channelItems].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
     return NextResponse.json({
       success: true,
-      offerings: enrichedOfferings,
-      total: enrichedOfferings.length,
+      offerings: allItems, // Keep the same property name for backward compatibility
+      total: allItems.length,
     });
   } catch (error) {
     console.error('Marketplace fetch error:', error);

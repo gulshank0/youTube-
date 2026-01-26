@@ -12,7 +12,15 @@ import {
   AlertCircle, 
   Loader2,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Shield,
+  Eye,
+  Clock,
+  Search,
+  ExternalLink,
+  RefreshCw,
+  AlertTriangle,
+  Info
 } from 'lucide-react';
 
 // Types
@@ -25,6 +33,17 @@ interface ChannelData {
     viewCount?: number;
     videoCount?: number;
     title?: string;
+    meetsRequirements?: {
+      minSubscribers: boolean;
+      minViews: boolean;
+      minVideos: boolean;
+      hasDescription: boolean;
+      hasCustomUrl: boolean;
+    };
+    requirementsSummary?: {
+      total: number;
+      passed: number;
+    };
   };
 }
 
@@ -32,6 +51,22 @@ interface OnboardingState {
   channelConnected: boolean;
   offeringCreated: boolean;
   channel: ChannelData | null;
+}
+
+interface OwnedChannel {
+  id: string;
+  snippet: {
+    title: string;
+    description: string;
+    thumbnails: {
+      default: { url: string };
+    };
+  };
+  statistics: {
+    subscriberCount: string;
+    viewCount: string;
+    videoCount: string;
+  };
 }
 
 // Helper function to get step class names
@@ -100,102 +135,133 @@ const ProgressStep = ({
   );
 };
 
+// Requirements Check Component
+const RequirementsCheck = ({ requirements, summary }: { 
+  requirements?: any; 
+  summary?: { total: number; passed: number } 
+}) => {
+  if (!requirements || !summary) return null;
+
+  const items = [
+    { key: 'minSubscribers', label: '1,000+ Subscribers', icon: Users },
+    { key: 'minViews', label: '4,000+ Watch Hours', icon: Eye },
+    { key: 'minVideos', label: '5+ Videos', icon: Video },
+    { key: 'hasDescription', label: 'Channel Description', icon: Info },
+    { key: 'hasCustomUrl', label: 'Custom URL', icon: ExternalLink },
+  ];
+
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="font-medium text-white">Channel Requirements</h4>
+        <span className={`text-sm px-2 py-1 rounded ${
+          summary.passed >= summary.total - 1 
+            ? 'bg-green-600/20 text-green-400' 
+            : summary.passed >= 2
+            ? 'bg-yellow-600/20 text-yellow-400'
+            : 'bg-red-600/20 text-red-400'
+        }`}>
+          {summary.passed}/{summary.total} Met
+        </span>
+      </div>
+      <div className="space-y-2">
+        {items.map(item => {
+          const Icon = item.icon;
+          const met = requirements[item.key];
+          return (
+            <div key={item.key} className="flex items-center gap-2">
+              <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                met ? 'bg-green-600' : 'bg-zinc-700'
+              }`}>
+                {met && <CheckCircle className="w-3 h-3 text-white" />}
+              </div>
+              <Icon className={`w-4 h-4 ${met ? 'text-green-400' : 'text-gray-500'}`} />
+              <span className={`text-sm ${met ? 'text-white' : 'text-gray-500'}`}>
+                {item.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 export default function CreatorOnboardPage() {
   const { data: session, status: authStatus } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // Core state
-  const [currentStep, setCurrentStep] = useState(1);
+  // State management
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  
-  // Onboarding state
+  const [currentStep, setCurrentStep] = useState(1);
+  const [youtubeChannelId, setYoutubeChannelId] = useState('');
+  const [showChannelSelector, setShowChannelSelector] = useState(false);
+  const [ownedChannels, setOwnedChannels] = useState<OwnedChannel[]>([]);
+  const [loadingChannels, setLoadingChannels] = useState(false);
+  const [youtubeAuthStatus, setYoutubeAuthStatus] = useState<{
+    hasAccess: boolean;
+    authUrl?: string;
+    scopes?: string[];
+  }>({ hasAccess: false });
+
   const [state, setState] = useState<OnboardingState>({
     channelConnected: false,
     offeringCreated: false,
     channel: null,
   });
 
-  // Form states
-  const [youtubeChannelId, setYoutubeChannelId] = useState('');
   const [offeringData, setOfferingData] = useState({
     title: '',
     description: '',
-    sharePercentage: 10,
-    totalShares: 1000,
-    pricePerShare: 100,
-    minInvestment: 500,
-    maxInvestment: 10000,
+    sharePercentage: 20,
+    totalShares: 10000,
+    pricePerShare: 10,
+    minInvestment: 1000,
+    maxInvestment: 50000,
     duration: 24,
   });
 
-  // Check progress on mount - optimized single call pattern
+  // Check progress on load
   const checkProgress = useCallback(async () => {
-    if (!session?.user) return;
-    
     try {
-      setLoading(true);
-      
-      // Parallel API calls for better performance
-      const [channelRes, offeringRes] = await Promise.all([
+      const [channelRes, youtubeRes] = await Promise.all([
         fetch('/api/creator/channel'),
-        fetch('/api/creator/offering'),
+        fetch('/api/auth/youtube')
       ]);
-
-      const [channelResult, offeringResult] = await Promise.all([
-        channelRes.json(),
-        offeringRes.json(),
-      ]);
-
-      const hasChannel = channelResult.success && channelResult.channels?.length > 0;
-      const hasOffering = offeringResult.success && offeringResult.offerings?.length > 0;
-
-      setState({
-        channelConnected: hasChannel,
-        offeringCreated: hasOffering,
-        channel: hasChannel ? channelResult.channels[0] : null,
+      
+      const channelData = await channelRes.json();
+      const youtubeData = await youtubeRes.json();
+      
+      setYoutubeAuthStatus({
+        hasAccess: youtubeData.hasYouTubeAccess || false,
+        authUrl: youtubeData.authUrl,
+        scopes: youtubeData.scopes,
       });
 
-      // Determine current step
-      if (!hasChannel) {
-        setCurrentStep(1);
-      } else if (hasOffering) {
-        setCurrentStep(3);
-      } else {
+      if (channelData.success && channelData.channels?.length > 0) {
+        const channel = channelData.channels[0];
+        setState(prev => ({
+          ...prev,
+          channelConnected: true,
+          channel,
+        }));
         setCurrentStep(2);
-        // Pre-fill offering title from channel name
-        if (channelResult.channels[0]?.channelName) {
-          setOfferingData(prev => ({
-            ...prev,
-            title: `Invest in ${channelResult.channels[0].channelName}`,
-          }));
+        
+        // Check if they have offerings
+        if (channel.offerings?.length > 0) {
+          setState(prev => ({ ...prev, offeringCreated: true }));
+          setCurrentStep(3);
         }
       }
     } catch (err) {
       console.error('Progress check error:', err);
-      setError('Failed to load progress. Please refresh.');
     } finally {
       setLoading(false);
     }
-  }, [session?.user]);
-
-  // Handle OAuth callback
-  useEffect(() => {
-    const youtubeSuccess = searchParams.get('youtube_success');
-    const youtubeError = searchParams.get('youtube_error');
-    
-    if (youtubeError) {
-      setError(decodeURIComponent(youtubeError));
-      globalThis.history.replaceState({}, '', '/creator/onboard');
-    } else if (youtubeSuccess) {
-      setError('');
-      globalThis.history.replaceState({}, '', '/creator/onboard');
-      // Refresh progress after successful auth
-      checkProgress();
-    }
-  }, [searchParams, checkProgress]);
+  }, []);
 
   // Initial load
   useEffect(() => {
@@ -206,11 +272,38 @@ export default function CreatorOnboardPage() {
     }
   }, [session?.user, authStatus, checkProgress]);
 
+  // Load owned channels
+  const loadOwnedChannels = async () => {
+    setLoadingChannels(true);
+    try {
+      const res = await fetch('/api/creator/channel?action=owned-channels');
+      const data = await res.json();
+      
+      if (data.success) {
+        setOwnedChannels(data.channels || []);
+        setShowChannelSelector(true);
+      } else if (data.requiresAuth || data.requiresReauth) {
+        // Need to authorize YouTube access first
+        setError('Please authorize YouTube access first');
+        if (data.authUrl) {
+          window.location.href = data.authUrl;
+        }
+      } else {
+        setError(data.error || 'Failed to load channels');
+      }
+    } catch (err) {
+      console.error('Load channels error:', err);
+      setError('Failed to load your channels');
+    } finally {
+      setLoadingChannels(false);
+    }
+  };
+
   // Connect YouTube Channel
   const handleChannelConnect = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!youtubeChannelId.trim()) {
-      setError('Please enter your YouTube Channel ID');
+      setError('Please enter your YouTube Channel ID or select from your channels');
       return;
     }
 
@@ -218,14 +311,16 @@ export default function CreatorOnboardPage() {
     setError('');
 
     try {
-      // First check if we need YouTube OAuth
-      const authCheck = await fetch('/api/auth/youtube');
-      const authResult = await authCheck.json();
+      // First check YouTube auth status
+      if (!youtubeAuthStatus.hasAccess) {
+        const authCheck = await fetch('/api/auth/youtube');
+        const authResult = await authCheck.json();
 
-      if (!authResult.hasYouTubeAccess && authResult.authUrl) {
-        // Redirect to YouTube OAuth
-        globalThis.location.href = authResult.authUrl;
-        return;
+        if (!authResult.hasYouTubeAccess && authResult.authUrl) {
+          // Redirect to YouTube OAuth
+          window.location.href = authResult.authUrl;
+          return;
+        }
       }
 
       // Connect channel
@@ -247,9 +342,20 @@ export default function CreatorOnboardPage() {
           ...prev,
           title: `Invest in ${result.channel.channelName || 'My Channel'}`,
         }));
-        setCurrentStep(2);
+        
+        if (result.status === 'VERIFIED') {
+          setCurrentStep(2);
+        } else if (result.status === 'REJECTED') {
+          setError('Channel does not meet minimum requirements. Please check the requirements below.');
+        } else {
+          setError('Channel submitted for review. You will be notified once approved.');
+        }
       } else if (result.requiresReauth && result.authUrl) {
-        globalThis.location.href = result.authUrl;
+        window.location.href = result.authUrl;
+      } else if (result.rateLimited) {
+        setError(result.error);
+      } else if (result.conflictType === 'DUPLICATE_CHANNEL') {
+        setError(result.error);
       } else {
         setError(result.error || 'Failed to connect channel');
       }
@@ -354,15 +460,15 @@ export default function CreatorOnboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 py-12 px-4">
+    <div className="min-h-screen bg-zinc-950 py-16 px-4">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-bold text-white">
-            Creator <span className="text-red-600">Onboarding</span>
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-white mb-4">
+            Creator Onboarding
           </h1>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-            Connect your channel and create your investment offering in minutes
+          <p className="text-gray-400 text-lg">
+            Connect your YouTube channel and start earning from your content
           </p>
         </div>
 
@@ -372,105 +478,342 @@ export default function CreatorOnboardPage() {
             step={1} 
             current={currentStep} 
             completed={state.channelConnected}
-            title="Connect Channel"
+            title="Connect YouTube Channel"
             icon={Video}
           />
           <ProgressStep 
             step={2} 
             current={currentStep} 
             completed={state.offeringCreated}
-            title="Create Offering"
+            title="Create Investment Offering"
             icon={IndianRupee}
           />
           <ProgressStep 
             step={3} 
             current={currentStep} 
-            completed={currentStep === 3}
+            completed={state.offeringCreated}
             title="Go Live"
-            icon={Users}
+            icon={Sparkles}
           />
         </div>
 
         {/* Error Display */}
         {error && (
-          <div className="bg-red-950/30 border border-red-600/50 rounded-lg p-4">
-            <div className="flex items-center gap-3 text-red-400">
-              <AlertCircle className="h-5 w-5 shrink-0" />
-              <p>{error}</p>
-              <button 
-                onClick={() => setError('')}
-                className="ml-auto text-red-400 hover:text-red-300"
-              >
-                ✕
-              </button>
+          <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-red-400 font-medium">Error</p>
+              <p className="text-red-300 text-sm mt-1">{error}</p>
             </div>
           </div>
         )}
 
         {/* Step 1: Connect YouTube Channel */}
         {currentStep === 1 && (
-          <div className="youtube-card">
-            <div className="p-6 md:p-8 border-b border-zinc-800">
-              <div className="flex items-center gap-3 mb-2">
-                <Video className="h-6 w-6 text-red-600" />
-                <h2 className="text-2xl font-bold text-white">Connect Your YouTube Channel</h2>
+          <div className="youtube-card p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
+                <Video className="h-6 w-6 text-white" />
               </div>
-              <p className="text-gray-400">
-                Link your channel to enable revenue sharing with investors
-              </p>
+              <div>
+                <h2 className="text-2xl font-bold text-white">Connect Your YouTube Channel</h2>
+                <p className="text-gray-400">Verify ownership and grant analytics access</p>
+              </div>
             </div>
 
-            <form onSubmit={handleChannelConnect} className="p-6 md:p-8 space-y-6">
-              <div>
-                <label htmlFor="youtube-channel-id" className="block text-sm font-medium text-gray-300 mb-2">
-                  YouTube Channel ID
-                </label>
+            {/* Security Notice */}
+            <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <Shield className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-blue-400 font-medium">Secure Verification</p>
+                  <p className="text-blue-300 text-sm mt-1">
+                    We verify channel ownership through YouTube's official API. Your data is encrypted and secure.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* YouTube Auth Status */}
+            {!youtubeAuthStatus.hasAccess && (
+              <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4 mb-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5" />
+                    <div>
+                      <p className="text-yellow-400 font-medium">YouTube Access Required</p>
+                      <p className="text-yellow-300 text-sm mt-1">
+                        Grant YouTube channel and analytics permissions to continue
+                      </p>
+                    </div>
+                  </div>
+                  {youtubeAuthStatus.authUrl && (
+                    <Button 
+                      onClick={() => window.location.href = youtubeAuthStatus.authUrl!}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-black"
+                    >
+                      Authorize YouTube
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleChannelConnect} className="space-y-6">
+              {/* Channel Selection Options */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-white">
+                    YouTube Channel ID
+                  </label>
+                  {youtubeAuthStatus.hasAccess && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={loadOwnedChannels}
+                      disabled={loadingChannels}
+                      className="border-zinc-600 text-gray-300 hover:bg-zinc-800"
+                    >
+                      {loadingChannels ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Search className="h-4 w-4 mr-2" />
+                      )}
+                      Browse My Channels
+                    </Button>
+                  )}
+                </div>
+
                 <input
-                  id="youtube-channel-id"
                   type="text"
-                  required
                   value={youtubeChannelId}
                   onChange={(e) => setYoutubeChannelId(e.target.value)}
                   placeholder="UCxxxxxxxxxxxxxxxxxx"
-                  className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-lg focus:border-red-600 focus:outline-none focus:ring-1 focus:ring-red-600"
+                  className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600"
                 />
-                <p className="text-sm text-gray-500 mt-2">
-                  Find it at: YouTube Studio → Settings → Channel → Advanced Settings
+                <p className="text-sm text-gray-400">
+                  Find your Channel ID in YouTube Studio → Settings → Channel → Advanced settings
                 </p>
               </div>
 
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
-                <h3 className="font-medium text-white mb-3">What happens next?</h3>
-                <ul className="space-y-2 text-sm text-gray-400">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 shrink-0" />
-                    <span>We&apos;ll verify you own the channel</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 shrink-0" />
-                    <span>Fetch your channel analytics (subscribers, views)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-400 mt-0.5 shrink-0" />
-                    <span>You&apos;ll be redirected to Google for authorization</span>
-                  </li>
-                </ul>
-              </div>
+              {/* Channel Selector Modal */}
+              {showChannelSelector && (
+                <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-medium text-white">Select Your Channel</h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowChannelSelector(false)}
+                      className="border-zinc-600 text-gray-300"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {ownedChannels.map((channel) => (
+                      <div
+                        key={channel.id}
+                        onClick={() => {
+                          setYoutubeChannelId(channel.id);
+                          setShowChannelSelector(false);
+                        }}
+                        className="flex items-center gap-3 p-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg cursor-pointer transition-colors"
+                      >
+                        <img
+                          src={channel.snippet.thumbnails.default.url}
+                          alt={channel.snippet.title}
+                          className="w-10 h-10 rounded-full"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-white">{channel.snippet.title}</p>
+                          <p className="text-sm text-gray-400">
+                            {parseInt(channel.statistics.subscriberCount).toLocaleString()} subscribers
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              <Button 
-                type="submit" 
-                disabled={submitting}
-                className="youtube-button w-full text-lg py-6 h-auto"
+              <Button
+                type="submit"
+                disabled={submitting || !youtubeChannelId.trim()}
+                className="youtube-button w-full"
               >
                 {submitting ? (
                   <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Connecting...
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Verifying Channel...
                   </>
                 ) : (
                   <>
-                    Connect Channel
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                    <Shield className="h-4 w-4 mr-2" />
+                    Verify Channel Ownership
+                  </>
+                )}
+              </Button>
+            </form>
+
+            {/* Requirements Info */}
+            <div className="mt-8 bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+              <h3 className="font-medium text-white mb-4">Channel Requirements</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-blue-400" />
+                  <span className="text-gray-300">1,000+ Subscribers (recommended)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-green-400" />
+                  <span className="text-gray-300">4,000+ Watch Hours (recommended)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Video className="h-4 w-4 text-red-400" />
+                  <span className="text-gray-300">5+ Published Videos</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-purple-400" />
+                  <span className="text-gray-300">Channel in Good Standing</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-4">
+                Channels not meeting all requirements may still be accepted based on content quality and engagement.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Create Offering */}
+        {currentStep === 2 && state.channel && (
+          <div className="youtube-card p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
+                <IndianRupee className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">Create Investment Offering</h2>
+                <p className="text-gray-400">Set your revenue sharing terms</p>
+              </div>
+            </div>
+
+            {/* Channel Info */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold">
+                    {state.channel.channelName[0]?.toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="font-medium text-white">{state.channel.channelName}</h3>
+                  <p className="text-sm text-gray-400">
+                    {state.channel.analytics.subscriberCount?.toLocaleString()} subscribers • {' '}
+                    {state.channel.analytics.videoCount} videos
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Requirements Check */}
+            {state.channel.analytics.meetsRequirements && state.channel.analytics.requirementsSummary && (
+              <RequirementsCheck 
+                requirements={state.channel.analytics.meetsRequirements}
+                summary={state.channel.analytics.requirementsSummary}
+              />
+            )}
+
+            <form onSubmit={handleOfferingCreate} className="space-y-6 mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Offering Title
+                  </label>
+                  <input
+                    type="text"
+                    value={offeringData.title}
+                    onChange={(e) => setOfferingData(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-red-600"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Revenue Share (%)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={offeringData.sharePercentage}
+                    onChange={(e) => setOfferingData(prev => ({ ...prev, sharePercentage: parseInt(e.target.value) }))}
+                    className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-red-600"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Price per Share (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={offeringData.pricePerShare}
+                    onChange={(e) => setOfferingData(prev => ({ ...prev, pricePerShare: parseInt(e.target.value) }))}
+                    className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-red-600"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Duration (months)
+                  </label>
+                  <select
+                    value={offeringData.duration}
+                    onChange={(e) => setOfferingData(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
+                    className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-red-600"
+                  >
+                    <option value={12}>12 months</option>
+                    <option value={18}>18 months</option>
+                    <option value={24}>24 months</option>
+                    <option value={36}>36 months</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={offeringData.description}
+                  onChange={(e) => setOfferingData(prev => ({ ...prev, description: e.target.value }))}
+                  rows={4}
+                  className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:outline-none focus:border-red-600"
+                  placeholder="Describe your channel and what investors can expect..."
+                  required
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="youtube-button w-full"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Creating Offering...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Create Investment Offering
                   </>
                 )}
               </Button>
@@ -478,273 +821,54 @@ export default function CreatorOnboardPage() {
           </div>
         )}
 
-        {/* Step 2: Create Offering */}
-        {currentStep === 2 && (
-          <div className="youtube-card">
-            <div className="p-6 md:p-8 border-b border-zinc-800">
-              <div className="flex items-center gap-3 mb-2">
-                <Sparkles className="h-6 w-6 text-red-600" />
-                <h2 className="text-2xl font-bold text-white">Create Your Offering</h2>
-              </div>
-              <p className="text-gray-400">
-                Set your revenue sharing terms for investors
-              </p>
-            </div>
-
-            <form onSubmit={handleOfferingCreate} className="p-6 md:p-8 space-y-6">
-              {/* Connected Channel Info */}
-              {state.channel && (
-                <div className="bg-green-950/20 border border-green-600/30 rounded-lg p-4">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-400" />
-                    <div>
-                      <p className="font-medium text-white">{state.channel.channelName}</p>
-                      <p className="text-sm text-gray-400">
-                        {(state.channel.analytics?.subscriberCount || 0).toLocaleString()} subscribers • {(state.channel.analytics?.videoCount || 0).toLocaleString()} videos
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Basic Info */}
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="offering-title" className="block text-sm font-medium text-gray-300 mb-2">
-                    Offering Title
-                  </label>
-                  <input
-                    id="offering-title"
-                    type="text"
-                    required
-                    value={offeringData.title}
-                    onChange={(e) => setOfferingData(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="e.g., Invest in My Gaming Channel"
-                    className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-white focus:border-red-600 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="offering-description" className="block text-sm font-medium text-gray-300 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    id="offering-description"
-                    required
-                    value={offeringData.description}
-                    onChange={(e) => setOfferingData(prev => ({ ...prev, description: e.target.value }))}
-                    rows={3}
-                    placeholder="Tell investors about your channel and growth plans..."
-                    className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-white focus:border-red-600 focus:outline-none resize-none"
-                  />
-                </div>
-              </div>
-
-              {/* Key Settings */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="share-percentage" className="block text-sm font-medium text-gray-300 mb-2">
-                    Revenue Share %
-                  </label>
-                  <input
-                    id="share-percentage"
-                    type="number"
-                    required
-                    min="1"
-                    max="50"
-                    value={offeringData.sharePercentage}
-                    onChange={(e) => setOfferingData(prev => ({ ...prev, sharePercentage: Number(e.target.value) }))}
-                    className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-white focus:border-red-600 focus:outline-none"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Share of revenue for investors (1-50%)</p>
-                </div>
-
-                <div>
-                  <label htmlFor="duration" className="block text-sm font-medium text-gray-300 mb-2">
-                    Duration (months)
-                  </label>
-                  <input
-                    id="duration"
-                    type="number"
-                    required
-                    min="12"
-                    max="60"
-                    value={offeringData.duration}
-                    onChange={(e) => setOfferingData(prev => ({ ...prev, duration: Number(e.target.value) }))}
-                    className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-white focus:border-red-600 focus:outline-none"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">How long investors receive payouts</p>
-                </div>
-
-                <div>
-                  <label htmlFor="price-per-share" className="block text-sm font-medium text-gray-300 mb-2">
-                    Price per Share (₹)
-                  </label>
-                  <input
-                    id="price-per-share"
-                    type="number"
-                    required
-                    min="10"
-                    value={offeringData.pricePerShare}
-                    onChange={(e) => setOfferingData(prev => ({ ...prev, pricePerShare: Number(e.target.value) }))}
-                    className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-white focus:border-red-600 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="total-shares" className="block text-sm font-medium text-gray-300 mb-2">
-                    Total Shares
-                  </label>
-                  <input
-                    id="total-shares"
-                    type="number"
-                    required
-                    min="100"
-                    value={offeringData.totalShares}
-                    onChange={(e) => setOfferingData(prev => ({ ...prev, totalShares: Number(e.target.value) }))}
-                    className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-white focus:border-red-600 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Summary */}
-              <div className="bg-linear-to-r from-red-950/30 to-zinc-900 border border-red-600/30 rounded-lg p-5">
-                <h3 className="font-semibold text-white mb-3">Offering Summary</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-500">Funding Goal</p>
-                    <p className="text-xl font-bold text-white">
-                      ₹{(offeringData.totalShares * offeringData.pricePerShare).toLocaleString('en-IN')}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Revenue Share</p>
-                    <p className="text-xl font-bold text-white">
-                      {offeringData.sharePercentage}% for {offeringData.duration}mo
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCurrentStep(1)}
-                  className="flex-1 border-zinc-700 text-gray-300 hover:bg-zinc-800 hover:text-white py-6"
-                >
-                  Back
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={submitting}
-                  className="youtube-button flex-1 text-lg py-6 h-auto"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      Create Offering
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </div>
-        )}
-
         {/* Step 3: Success */}
-        {currentStep === 3 && (
-          <div className="youtube-card">
-            <div className="p-8 md:p-12 text-center space-y-6">
-              <div className="w-20 h-20 bg-green-600/20 rounded-full flex items-center justify-center mx-auto">
-                <CheckCircle className="h-10 w-10 text-green-400" />
-              </div>
-              
-              <div className="space-y-3">
-                <h2 className="text-3xl font-bold text-white">You&apos;re Live! 🎉</h2>
-                <p className="text-lg text-gray-400 max-w-xl mx-auto">
-                  Congratulations! Your offering is <span className="text-green-400 font-semibold">instantly live</span> on the marketplace — no approval needed! Investors can start investing right now.
-                </p>
-              </div>
+        {currentStep === 3 && state.offeringCreated && (
+          <div className="youtube-card p-8 text-center">
+            <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="h-8 w-8 text-white" />
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-4">
+              🎉 Welcome to the Creator Program!
+            </h2>
+            <p className="text-gray-400 text-lg mb-8">
+              Your channel is now live on the marketplace and ready for investment
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <Button 
+                onClick={() => router.push('/marketplace')}
+                className="youtube-button"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                View on Marketplace
+              </Button>
+              <Button 
+                onClick={() => router.push('/dashboard/creator')}
+                variant="outline"
+                className="border-zinc-600 text-gray-300 hover:bg-zinc-800"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Creator Dashboard
+              </Button>
+            </div>
 
-              <div className="bg-green-950/30 border border-green-600/30 rounded-lg p-4 max-w-md mx-auto">
-                <h3 className="font-medium text-green-400 mb-2">✓ Onboarding Complete</h3>
-                <ul className="text-sm text-gray-300 text-left space-y-2">
-                  <li>• Your offering is <span className="text-green-400">live</span> in the marketplace</li>
-                  <li>• Investors can purchase shares immediately</li>
-                  <li>• Track investments from your creator dashboard</li>
-                  <li>• Complete KYC before your first payout</li>
-                </ul>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                <Button 
-                  onClick={() => router.push('/dashboard/creator')}
-                  className="youtube-button text-lg px-8 py-4 h-auto"
-                >
-                  Go to Dashboard
-                </Button>
-                <Button 
-                  onClick={() => router.push('/marketplace')}
-                  variant="outline"
-                  className="border-zinc-700 text-black hover:bg-zinc-800 text-lg px-8 py-4 h-auto"
-                >
-                  View Marketplace
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Benefits - Show on step 1 and 2 only */}
-        {currentStep < 3 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="youtube-card p-5">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-green-600/20 rounded-lg flex items-center justify-center shrink-0">
-                  <CheckCircle className="h-5 w-5 text-green-400" />
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+              <h3 className="font-medium text-white mb-4">What's Next?</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="text-center">
+                  <Users className="h-6 w-6 text-blue-400 mx-auto mb-2" />
+                  <p className="text-white font-medium">Attract Investors</p>
+                  <p className="text-gray-400">Share your offering with potential investors</p>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-white">Keep Full Control</h3>
-                  <p className="text-sm text-gray-400">Maintain creative freedom and channel ownership</p>
+                <div className="text-center">
+                  <IndianRupee className="h-6 w-6 text-green-400 mx-auto mb-2" />
+                  <p className="text-white font-medium">Earn Revenue</p>
+                  <p className="text-gray-400">Share profits with your investors monthly</p>
                 </div>
-              </div>
-            </div>
-            <div className="youtube-card p-5">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-green-600/20 rounded-lg flex items-center justify-center shrink-0">
-                  <IndianRupee className="h-5 w-5 text-green-400" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white">Upfront Capital</h3>
-                  <p className="text-sm text-gray-400">Get funding now for equipment and growth</p>
-                </div>
-              </div>
-            </div>
-            <div className="youtube-card p-5">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-green-600/20 rounded-lg flex items-center justify-center shrink-0">
-                  <Users className="h-5 w-5 text-green-400" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white">Community Investors</h3>
-                  <p className="text-sm text-gray-400">Your fans become invested in your success</p>
-                </div>
-              </div>
-            </div>
-            <div className="youtube-card p-5">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-green-600/20 rounded-lg flex items-center justify-center shrink-0">
-                  <Sparkles className="h-5 w-5 text-green-400" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white">Simple Process</h3>
-                  <p className="text-sm text-gray-400">No complex paperwork or lengthy approvals</p>
+                <div className="text-center">
+                  <Video className="h-6 w-6 text-red-400 mx-auto mb-2" />
+                  <p className="text-white font-medium">Create Content</p>
+                  <p className="text-gray-400">Keep producing great content for growth</p>
                 </div>
               </div>
             </div>
